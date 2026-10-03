@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>EvuMagnets.Core</RootNamespace>
+    <AssemblyName>EvuMagnets.Core</AssemblyName>
+  </PropertyGroup>
+</Project>
