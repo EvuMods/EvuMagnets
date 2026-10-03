@@ -144,17 +144,23 @@ fetch_valheim() {
     steamcmd="$CACHE/steamcmd/steamcmd.sh"
   fi
 
-  set +e
-  "$steamcmd" +force_install_dir "$install" +login anonymous +app_update "$APP_ID" validate +quit
-  local status=$?
-  set -e
-
-  local managed
-  if ! managed="$(find_managed "$install")"; then
-    echo "fetch-refs: steamcmd exit $status and assembly_valheim.dll was not found under $install" >&2
-    exit 1
-  fi
-  copy_valheim "$managed" "$buildid"
+  # A fresh SteamCMD often exits 8 with "Missing configuration" on the first
+  # app_update. The same command succeeds once the client has updated itself.
+  local attempt status managed
+  status=1
+  for attempt in 1 2 3; do
+    set +e
+    "$steamcmd" +force_install_dir "$install" +login anonymous +app_update "$APP_ID" validate +quit
+    status=$?
+    set -e
+    if managed="$(find_managed "$install")"; then
+      copy_valheim "$managed" "$buildid"
+      return
+    fi
+    echo "fetch-refs: steamcmd attempt ${attempt} exited ${status}; assembly_valheim.dll was not found under ${install}" >&2
+    sleep 5
+  done
+  exit 1
 }
 
 fetch_bepinex
