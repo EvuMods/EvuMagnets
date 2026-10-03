@@ -19,7 +19,7 @@ from pathlib import Path
 
 manifest_path, dest, version, game_category = sys.argv[1:]
 manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-categories = ["mods", "ai-generated", "gear", game_category]
+categories = ["mods", "ai-generated", "gear", "client-side", "server-side", game_category]
 seen = []
 for category in categories:
     if category not in seen:
