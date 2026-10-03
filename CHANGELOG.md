@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+### Bug Fixes
+
+* publish a 256x256 Thunderstore icon
+
 ## [0.2.0](https://github.com/EvuMods/EvuMagnets/compare/v0.1.0...v0.2.0) (2026-10-03)
 
 

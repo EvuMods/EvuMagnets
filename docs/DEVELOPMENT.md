@@ -27,7 +27,7 @@ make verify
 make package
 ```
 
-`make verify` is the gate: fetch references if needed, build, and test. `make package` writes `dist/EvuMagnets-<version>.zip` in the Hexium layout: `manifest.json`, `icon.png`, `README.md`, `CHANGELOG.md`, `EvuMagnets.dll`, and `EvuMagnets.Core.dll` all at the zip root. `version_number` in the packaged manifest is taken from `version.txt`. Jotunn is a manifest dependency. BepInExPack is not; Hexium assumes it and strips that entry on upload.
+`make verify` is the gate: fetch references if needed, build, and test. `make package` writes `dist/EvuMagnets-<version>.zip` in the Hexium layout: `manifest.json`, `icon.png`, `README.md`, `CHANGELOG.md`, `EvuMagnets.dll`, and `EvuMagnets.Core.dll` all at the zip root. `icon.png` must be 256×256. `version_number` in the packaged manifest is taken from `version.txt`. Jotunn is a manifest dependency. BepInExPack is not; Hexium assumes it and strips that entry on upload.
 
 The release workflow attaches that zip and the two raw DLLs to the GitHub release. The Thunderstore workflow is manual. Run it from Actions, leave the tag empty to package the selected branch, or set a release tag such as `v0.1.0`. It publishes team `EvuMods` to the Valheim community with categories Mods, AI Generated, Gear, and the update slug from the `game_category` input (`deep-north-update` today). NSFW is off. The service account token belongs in the `TCLI_AUTH_TOKEN` repository secret, not in the repo.
 

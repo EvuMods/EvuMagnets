@@ -29,6 +29,19 @@ for required in "$ROOT/manifest.json" "$ROOT/icon.png" "$ROOT/README.md" "$ROOT/
   fi
 done
 
+"$(python_bin)" - "$ROOT/icon.png" <<'PY'
+import struct
+import sys
+from pathlib import Path
+
+data = Path(sys.argv[1]).read_bytes()
+if data[12:16] != b"IHDR":
+    raise SystemExit("package: icon.png is not a PNG")
+width, height = struct.unpack(">II", data[16:24])
+if (width, height) != (256, 256):
+    raise SystemExit(f"package: icon.png must be 256x256, got {width}x{height}")
+PY
+
 rm -rf "$STAGE" "$ZIP"
 mkdir -p "$STAGE"
 cp "$DLL" "$CORE" "$ROOT/icon.png" "$ROOT/README.md" "$ROOT/CHANGELOG.md" "$STAGE/"
