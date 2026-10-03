@@ -1,6 +1,8 @@
 name: Thunderstore
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -21,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
 
       - name: Require Thunderstore token
         env:
@@ -50,7 +52,7 @@ jobs:
         run: make package
 
       - name: Write Thunderstore config
-        run: bash scripts/write-thunderstore-config.sh "${{ inputs.game_category }}"
+        run: bash scripts/write-thunderstore-config.sh "${{ inputs.game_category || 'deep-north-update' }}"
 
       - name: Install tcli
         run: |
