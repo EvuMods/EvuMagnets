@@ -95,4 +95,42 @@ public sealed class PickupRulesTests
             "evu_magnet_flametal",
             PickupRules.ActivePrefab(true, "evu_magnet_flametal", new string[0]));
     }
+
+    [Fact]
+    public void Claim_GoesToTheNearestPlayer()
+    {
+        var others = new[]
+        {
+            new PickupRules.ClaimDistance(8f, 2),
+            new PickupRules.ClaimDistance(12f, 3),
+        };
+
+        Assert.True(PickupRules.IsBestClaim(4f, 9, others, PickupRules.ClaimMargin));
+        Assert.False(PickupRules.IsBestClaim(10f, 1, others, PickupRules.ClaimMargin));
+        Assert.True(PickupRules.IsBestClaim(4f, 9, new PickupRules.ClaimDistance[0], PickupRules.ClaimMargin));
+    }
+
+    [Fact]
+    public void Claim_BreaksANearTieByPlayerId()
+    {
+        var nearer = new[] { new PickupRules.ClaimDistance(5.4f, 20) };
+        Assert.True(PickupRules.IsBestClaim(5f, 10, nearer, PickupRules.ClaimMargin));
+        Assert.False(PickupRules.IsBestClaim(5f, 30, nearer, PickupRules.ClaimMargin));
+    }
+
+    [Fact]
+    public void Pull_StopsOnThePlayerWithoutChangingHeight()
+    {
+        PickupRules.PullOffset(0f, 0f, 10f, 0f, PickupRules.PullSpeed, 10f, out var offsetX, out var offsetZ);
+        Assert.Equal(10f, offsetX);
+        Assert.Equal(0f, offsetZ);
+    }
+
+    [Fact]
+    public void Pull_StaysOnTheGroundLine()
+    {
+        PickupRules.PullOffset(0f, 0f, 3f, 4f, PickupRules.PullSpeed, 0.1f, out var offsetX, out var offsetZ);
+        Assert.Equal(0.9, offsetX, 3);
+        Assert.Equal(1.2, offsetZ, 3);
+    }
 }

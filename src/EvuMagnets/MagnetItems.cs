@@ -37,6 +37,11 @@ internal static class MagnetItems
 
         _registered = true;
         AddTranslations();
+        if (AzuMagnetSlot.TryGetFakeItemType(out _))
+        {
+            Plugin.Log.LogInfo("AzuEPI is loaded. Magnets use its custom item type.");
+        }
+
         var source = FindCloneSource();
         var names = new string[MagnetCatalog.All.Count];
         for (var i = 0; i < MagnetCatalog.All.Count; i++)
@@ -167,7 +172,9 @@ internal static class MagnetItems
         var shared = drop.m_itemData.m_shared;
         shared.m_name = "$" + tier.Token;
         shared.m_description = "$" + tier.Token + "_desc";
-        shared.m_itemType = ItemDrop.ItemData.ItemType.Trinket;
+        shared.m_itemType = AzuMagnetSlot.TryGetFakeItemType(out var magnetType)
+            ? magnetType
+            : ItemDrop.ItemData.ItemType.Trinket;
         shared.m_maxStackSize = 1;
         shared.m_weight = 2f;
         shared.m_maxQuality = tier.Ranges.Length;

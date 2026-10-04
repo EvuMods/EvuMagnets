@@ -4,10 +4,10 @@ Craftable magnets that pull items on the ground in from farther away. The pull i
 
 ## Features
 
-- Five trinket magnets: iron, silver, black metal, flametal, and bloodgold. The first four reach farther at each forge upgrade. Bloodgold is a single strength, cast in the frost foundry.
+- Five magnets: iron, silver, black metal, flametal, and bloodgold. The first four reach farther at each forge upgrade. Bloodgold is a single strength, cast in the frost foundry.
 - With no magnet equipped, pickup stays at the vanilla 2 meters.
 - Only one magnet works at a time. Equipping another unequips the first.
-- With AzuExtendedPlayerInventory installed, magnets prefer a Magnet slot over the trinket slot.
+- With AzuExtendedPlayerInventory installed, magnets use a Magnet slot and are not trinkets. Without it, they equip as trinkets.
 - Players can always pull items inside their own wards. `PullThroughAllWards` is what also reaches other players' wards.
 - A global toggle turns the bonus off without deleting crafted magnets. Alt+V pauses your own magnet and leaves vanilla auto-pickup on.
 

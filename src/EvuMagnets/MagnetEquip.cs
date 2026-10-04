@@ -14,9 +14,9 @@ internal static class MagnetEquip
             return;
         }
 
-        if (AzuMagnetSlot.Exists && AzuMagnetSlot.TryMoveToSlot(player, item) && player.m_trinketItem == item)
+        if (AzuMagnetSlot.Exists)
         {
-            player.m_trinketItem = null;
+            AzuMagnetSlot.TryMoveToSlot(player, item);
         }
 
         var inventory = player.GetInventory();

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using EvuMagnets.Core;
 using HarmonyLib;
 using UnityEngine;
@@ -8,26 +9,24 @@ namespace EvuMagnets;
 static class PickupPatch
 {
     static readonly Collider[] Hits = new Collider[128];
+    static readonly List<PickupRules.ClaimDistance> Claims = new List<PickupRules.ClaimDistance>();
 
     static void Prefix(Player __instance, ref float __state)
     {
         __state = __instance.m_autoPickupRange;
-        if (!ShouldExtend(__instance, out var range))
+        if (!ShouldExtend(__instance, out _))
         {
             return;
         }
 
-        __instance.m_autoPickupRange = Plugin.Settings.PullThroughAllWards.Value
-            ? range
-            : PickupRules.VanillaRange;
+        __instance.m_autoPickupRange = PickupRules.VanillaRange;
     }
 
     static void Postfix(Player __instance, float dt, float __state)
     {
         var extend = ShouldExtend(__instance, out var range);
-        var throughWards = Plugin.Settings != null && Plugin.Settings.PullThroughAllWards.Value;
         __instance.m_autoPickupRange = __state;
-        if (extend && !throughWards)
+        if (extend)
         {
             PullExtraRing(__instance, dt, range);
         }
@@ -95,12 +94,6 @@ static class PickupPatch
                 continue;
             }
 
-            if (!drop.CanPickup(true))
-            {
-                drop.RequestOwn();
-                continue;
-            }
-
             if (drop.InTar())
             {
                 continue;
@@ -114,6 +107,15 @@ static class PickupPatch
                 continue;
             }
 
+            var playerPosition = player.transform.position;
+            var horizontal = HorizontalDistance(position, playerPosition);
+            var inReach = horizontal <= PickupRules.PickupDistance;
+            var inRing = PickupRules.InExtraRing(horizontal, PickupRules.VanillaRange, range);
+            if (!inReach && !inRing)
+            {
+                continue;
+            }
+
             drop.Load();
             var data = drop.m_itemData;
             if (!inventory.CanAddItem(data, -1)
@@ -122,24 +124,82 @@ static class PickupPatch
                 continue;
             }
 
-            var distance = Vector3.Distance(position, origin);
-            if (!PickupRules.InExtraRing(distance, PickupRules.VanillaRange, range))
+            FillClaims(player, position);
+            var best = PickupRules.IsBestClaim(horizontal, player.GetPlayerID(), Claims, PickupRules.ClaimMargin);
+            if (!view.IsOwner())
+            {
+                if (best && inRing)
+                {
+                    drop.RequestOwn();
+                }
+
+                continue;
+            }
+
+            if (!best || !drop.CanPickup())
             {
                 continue;
             }
 
-            if (distance < PickupRules.PickupDistance)
+            if (inReach)
             {
                 player.Pickup(drop.gameObject, true, true);
                 continue;
             }
 
-            var step = (origin - position).normalized * (PickupRules.PullSpeed * dt);
+            PickupRules.PullOffset(
+                position.x,
+                position.z,
+                playerPosition.x,
+                playerPosition.z,
+                PickupRules.PullSpeed,
+                dt,
+                out var offsetX,
+                out var offsetZ);
+            var step = new Vector3(offsetX, 0f, offsetZ);
+            Stop(body);
+            Stop(drop.GetComponent<Rigidbody>());
             drop.transform.position += step;
             if (dummy != null)
             {
                 dummy.transform.position += step;
             }
         }
+    }
+
+    static void FillClaims(Player player, Vector3 itemPosition)
+    {
+        Claims.Clear();
+        var players = Player.GetAllPlayers();
+        for (var i = 0; i < players.Count; i++)
+        {
+            var other = players[i];
+            if (other == null || ReferenceEquals(other, player))
+            {
+                continue;
+            }
+
+            Claims.Add(new PickupRules.ClaimDistance(
+                HorizontalDistance(other.transform.position, itemPosition),
+                other.GetPlayerID()));
+        }
+    }
+
+    static float HorizontalDistance(Vector3 a, Vector3 b)
+    {
+        var dx = a.x - b.x;
+        var dz = a.z - b.z;
+        return Mathf.Sqrt((dx * dx) + (dz * dz));
+    }
+
+    static void Stop(Rigidbody body)
+    {
+        if (body == null)
+        {
+            return;
+        }
+
+        body.linearVelocity = Vector3.zero;
+        body.angularVelocity = Vector3.zero;
     }
 }

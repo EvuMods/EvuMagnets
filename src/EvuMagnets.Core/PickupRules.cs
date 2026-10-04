@@ -6,9 +6,23 @@ namespace EvuMagnets.Core;
 public static class PickupRules
 {
     public const float VanillaRange = 2f;
-    public const float PickupDistance = 0.3f;
+    public const float PickupDistance = 1f;
+    public const float ClaimMargin = 0.75f;
     public const float PullSpeed = 15f;
     public const string PrefabPrefix = "evu_magnet_";
+
+    public readonly struct ClaimDistance
+    {
+        public ClaimDistance(float distance, long playerId)
+        {
+            Distance = distance;
+            PlayerId = playerId;
+        }
+
+        public float Distance { get; }
+
+        public long PlayerId { get; }
+    }
 
     public static bool IsMagnet(string? prefabName)
     {
@@ -101,5 +115,63 @@ public static class PickupRules
         }
 
         return magnets[0];
+    }
+
+    public static bool IsBestClaim(float myDistance, long myId, IReadOnlyList<ClaimDistance> others, float margin)
+    {
+        if (others == null)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < others.Count; i++)
+        {
+            var other = others[i];
+            var difference = other.Distance - myDistance;
+            if (difference < -margin)
+            {
+                return false;
+            }
+
+            if (difference <= margin && other.PlayerId < myId)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void PullOffset(
+        float itemX,
+        float itemZ,
+        float playerX,
+        float playerZ,
+        float speed,
+        float dt,
+        out float offsetX,
+        out float offsetZ)
+    {
+        var deltaX = playerX - itemX;
+        var deltaZ = playerZ - itemZ;
+        var distance = Math.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
+        if (distance < 0.0001d || speed <= 0f || dt <= 0f)
+        {
+            offsetX = 0f;
+            offsetZ = 0f;
+            return;
+        }
+
+        var step = (double)speed * dt;
+        if (distance <= step)
+        {
+            offsetX = (float)deltaX;
+            offsetZ = (float)deltaZ;
+            return;
+        }
+
+        var scale = step / distance;
+        offsetX = (float)(deltaX * scale);
+        offsetZ = (float)(deltaZ * scale);
     }
 }
