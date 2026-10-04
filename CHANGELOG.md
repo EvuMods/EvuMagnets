@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/EvuMods/EvuMagnets/compare/v0.3.0...v0.3.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* stop magnet slot swaps and shared-item tug of war ([b4180b1](https://github.com/EvuMods/EvuMagnets/commit/b4180b187c1f1bd1f7b4fd26d8451588ac24500d))
+
 ## [0.3.0](https://github.com/EvuMods/EvuMagnets/compare/v0.2.1...v0.3.0) (2026-10-03)
 
 
