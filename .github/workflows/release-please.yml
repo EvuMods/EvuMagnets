@@ -80,6 +80,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run thunderstore.yml --ref main \
+          gh workflow run thunderstore.yml \
+            --repo "${{ github.repository }}" \
+            --ref main \
             -f tag="${{ needs.release-please.outputs.tag_name }}" \
             -f game_category=deep-north-update
