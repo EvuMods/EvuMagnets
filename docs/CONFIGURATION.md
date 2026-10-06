@@ -6,12 +6,13 @@ A configuration manager is optional. Synced settings show an S button there. An 
 
 ## Local
 
-These two stay on the client. They have no S button.
+These stay on the client. They have no S button.
 
 | Setting | Default | Description |
 | --- | --- | --- |
 | Active | On | When off, your magnet does not extend pickup. Vanilla auto-pickup stays on. |
 | Toggle | Left Alt + V | Key that flips Active. |
+| MaxHits | 2048 | Most nearby colliders one magnet pass will search. The search starts at 128 and grows to this cap. Lower it if a large pull hitches. |
 
 ## General
 

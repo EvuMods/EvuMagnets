@@ -9,3 +9,4 @@ dist/
 TestResults/
 verify.log
 *.DotSettings.user
+.local.mk

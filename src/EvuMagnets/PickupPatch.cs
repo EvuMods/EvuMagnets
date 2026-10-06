@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EvuMagnets.Core;
 using HarmonyLib;
@@ -8,8 +9,10 @@ namespace EvuMagnets;
 [HarmonyPatch(typeof(Player), nameof(Player.AutoPickup))]
 static class PickupPatch
 {
-    static readonly Collider[] Hits = new Collider[128];
+    const int InitialHits = 128;
+    static Collider[] Hits = new Collider[InitialHits];
     static readonly List<PickupRules.ClaimDistance> Claims = new List<PickupRules.ClaimDistance>();
+    static bool _loggedDropFailure;
 
     static void Prefix(Player __instance, ref float __state)
     {
@@ -52,7 +55,7 @@ static class PickupPatch
         }
 
         var origin = player.transform.position + Vector3.up;
-        var count = Physics.OverlapSphereNonAlloc(origin, range, Hits, player.m_autoPickupMask);
+        var count = Overlap(origin, range, player.m_autoPickupMask);
         var inventory = player.GetInventory();
         for (var i = 0; i < count; i++)
         {
@@ -63,108 +66,169 @@ static class PickupPatch
                 continue;
             }
 
-            var body = collider.attachedRigidbody;
-            if (body == null)
+            try
             {
-                continue;
+                PullOne(player, inventory, collider, origin, range, dt);
             }
-
-            var drop = body.GetComponent<ItemDrop>();
-            FloatingTerrainDummy? dummy = null;
-            if (drop == null)
+            catch (Exception ex)
             {
-                dummy = body.GetComponent<FloatingTerrainDummy>();
-                if (dummy != null && dummy.m_parent != null)
+                if (!_loggedDropFailure)
                 {
-                    drop = dummy.m_parent.GetComponent<ItemDrop>();
+                    _loggedDropFailure = true;
+                    Plugin.Log.LogWarning("Skipped a drop the magnet could not read: " + ex.Message);
                 }
-            }
-
-            if (drop == null
-                || !drop.m_autoPickup
-                || drop.IsPiece()
-                || player.HaveUniqueKey(drop.m_itemData.m_shared.m_name))
-            {
-                continue;
-            }
-
-            var view = drop.GetComponent<ZNetView>();
-            if (view == null || !view.IsValid())
-            {
-                continue;
-            }
-
-            if (drop.InTar())
-            {
-                continue;
-            }
-
-            var position = drop.transform.position;
-            if (!PickupRules.AllowInWard(
-                    Plugin.Settings.PullThroughAllWards.Value,
-                    PrivateArea.CheckAccess(position, 0f, false, true)))
-            {
-                continue;
-            }
-
-            var playerPosition = player.transform.position;
-            var horizontal = HorizontalDistance(position, playerPosition);
-            var inReach = horizontal <= PickupRules.PickupDistance;
-            var inRing = PickupRules.InExtraRing(horizontal, PickupRules.VanillaRange, range);
-            if (!inReach && !inRing)
-            {
-                continue;
-            }
-
-            drop.Load();
-            var data = drop.m_itemData;
-            if (!inventory.CanAddItem(data, -1)
-                || !PickupRules.FitsCarry(inventory.GetTotalWeight(), data.GetWeight(-1), player.GetMaxCarryWeight()))
-            {
-                continue;
-            }
-
-            FillClaims(player, position);
-            var best = PickupRules.IsBestClaim(horizontal, player.GetPlayerID(), Claims, PickupRules.ClaimMargin);
-            if (!view.IsOwner())
-            {
-                if (best && inRing)
-                {
-                    drop.RequestOwn();
-                }
-
-                continue;
-            }
-
-            if (!best || !drop.CanPickup())
-            {
-                continue;
-            }
-
-            if (inReach)
-            {
-                player.Pickup(drop.gameObject, true, true);
-                continue;
-            }
-
-            PickupRules.PullOffset(
-                position.x,
-                position.z,
-                playerPosition.x,
-                playerPosition.z,
-                PickupRules.PullSpeed,
-                dt,
-                out var offsetX,
-                out var offsetZ);
-            var step = new Vector3(offsetX, 0f, offsetZ);
-            Stop(body);
-            Stop(drop.GetComponent<Rigidbody>());
-            drop.transform.position += step;
-            if (dummy != null)
-            {
-                dummy.transform.position += step;
             }
         }
+    }
+
+    static void PullOne(Player player, Inventory inventory, Collider collider, Vector3 origin, float range, float dt)
+    {
+        var body = collider.attachedRigidbody;
+        if (body == null)
+        {
+            return;
+        }
+
+        var drop = body.GetComponent<ItemDrop>();
+        FloatingTerrainDummy? dummy = null;
+        if (drop == null)
+        {
+            dummy = body.GetComponent<FloatingTerrainDummy>();
+            if (dummy != null && dummy.m_parent != null)
+            {
+                drop = dummy.m_parent.GetComponent<ItemDrop>();
+            }
+        }
+
+        if (drop == null
+            || drop.m_itemData == null
+            || drop.m_itemData.m_shared == null
+            || !drop.m_autoPickup
+            || drop.IsPiece()
+            || player.HaveUniqueKey(drop.m_itemData.m_shared.m_name))
+        {
+            return;
+        }
+
+        var view = drop.GetComponent<ZNetView>();
+        if (view == null || !view.IsValid() || drop.InTar())
+        {
+            return;
+        }
+
+        var position = drop.transform.position;
+        if (!PickupRules.AllowInWard(
+                Plugin.Settings.PullThroughAllWards.Value,
+                PrivateArea.CheckAccess(position, 0f, false, true)))
+        {
+            return;
+        }
+
+        var playerPosition = player.transform.position;
+        var horizontal = HorizontalDistance(position, playerPosition);
+        var vanillaDistance = Vector3.Distance(position, origin);
+        var inReach = horizontal <= PickupRules.PickupDistance;
+        var inRing = PickupRules.NeedsPull(vanillaDistance, PickupRules.VanillaRange, range, PickupRules.HandoffMargin);
+        if (!inReach && !inRing)
+        {
+            return;
+        }
+
+        drop.Load();
+        var data = drop.m_itemData;
+        if (!inventory.CanAddItem(data, -1)
+            || !PickupRules.FitsCarry(inventory.GetTotalWeight(), data.GetWeight(-1), player.GetMaxCarryWeight()))
+        {
+            return;
+        }
+
+        FillClaims(player, position);
+        var best = PickupRules.IsBestClaim(horizontal, player.GetPlayerID(), Claims, PickupRules.ClaimMargin);
+        if (!view.IsOwner())
+        {
+            if (best && inRing)
+            {
+                drop.RequestOwn();
+            }
+
+            return;
+        }
+
+        if (!best || !drop.CanPickup())
+        {
+            return;
+        }
+
+        if (inReach)
+        {
+            player.Pickup(drop.gameObject, true, true);
+            return;
+        }
+
+        PickupRules.PullOffset(
+            position.x,
+            position.z,
+            playerPosition.x,
+            playerPosition.z,
+            PickupRules.PullSpeed,
+            dt,
+            out var offsetX,
+            out var offsetZ);
+        var step = new Vector3(offsetX, 0f, offsetZ);
+        Stop(body);
+        Stop(drop.GetComponent<Rigidbody>());
+        drop.transform.position += step;
+        if (dummy != null)
+        {
+            dummy.transform.position += step;
+        }
+    }
+
+    static int Overlap(Vector3 origin, float range, int mask)
+    {
+        var cap = HitCap();
+        if (Hits.Length > cap)
+        {
+            Hits = new Collider[cap];
+        }
+
+        while (true)
+        {
+            var count = Physics.OverlapSphereNonAlloc(origin, range, Hits, mask);
+            if (count < Hits.Length || Hits.Length >= cap)
+            {
+                return count;
+            }
+
+            var next = Hits.Length * 2;
+            if (next > cap)
+            {
+                next = cap;
+            }
+
+            if (next <= Hits.Length)
+            {
+                return count;
+            }
+
+            Hits = new Collider[next];
+        }
+    }
+
+    static int HitCap()
+    {
+        var value = Plugin.Settings != null ? Plugin.Settings.MaxHits.Value : 2048;
+        if (value < 128)
+        {
+            return 128;
+        }
+
+        if (value > 2048)
+        {
+            return 2048;
+        }
+
+        return value;
     }
 
     static void FillClaims(Player player, Vector3 itemPosition)

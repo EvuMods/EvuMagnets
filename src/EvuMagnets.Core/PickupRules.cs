@@ -7,6 +7,7 @@ public static class PickupRules
 {
     public const float VanillaRange = 2f;
     public const float PickupDistance = 1f;
+    public const float HandoffMargin = 0.5f;
     public const float ClaimMargin = 0.75f;
     public const float PullSpeed = 15f;
     public const string PrefabPrefix = "evu_magnet_";
@@ -58,6 +59,17 @@ public static class PickupRules
     public static bool InExtraRing(float distance, float vanillaRange, float magnetRange)
     {
         return distance > vanillaRange && distance <= magnetRange;
+    }
+
+    public static bool NeedsPull(float distanceToOrigin, float vanillaRange, float magnetRange, float handoff)
+    {
+        var inner = vanillaRange - handoff;
+        if (inner < 0f)
+        {
+            inner = 0f;
+        }
+
+        return distanceToOrigin > inner && distanceToOrigin <= magnetRange;
     }
 
     public static bool AllowInWard(bool pullThroughAllWards, bool playerHasAccess)

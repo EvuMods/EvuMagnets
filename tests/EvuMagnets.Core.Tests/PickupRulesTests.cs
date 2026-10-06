@@ -1,3 +1,4 @@
+using System;
 using EvuMagnets.Core;
 using Xunit;
 
@@ -55,6 +56,15 @@ public sealed class PickupRulesTests
         Assert.True(PickupRules.FitsCarry(298f, 2f, 300f));
         Assert.True(PickupRules.FitsCarry(300f, 0f, 300f));
         Assert.False(PickupRules.FitsCarry(299f, 2f, 300f));
+    }
+
+    [Fact]
+    public void Handoff_PullsAGroundDropAtTwoMeters()
+    {
+        var groundGap = (float)Math.Sqrt((2d * 2d) + (1d * 1d));
+        Assert.True(PickupRules.NeedsPull(groundGap, PickupRules.VanillaRange, 8f, PickupRules.HandoffMargin));
+        Assert.False(PickupRules.NeedsPull(1.4f, PickupRules.VanillaRange, 8f, PickupRules.HandoffMargin));
+        Assert.False(PickupRules.NeedsPull(8.01f, PickupRules.VanillaRange, 8f, PickupRules.HandoffMargin));
     }
 
     [Fact]

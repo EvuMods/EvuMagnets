@@ -5,7 +5,7 @@
 - `src/EvuMagnets.Core` holds the tier table, recipe text, carry check, and the rule for which magnet is active. It targets `netstandard2.0` and does not reference Unity.
 - `src/EvuMagnets` is the BepInEx plugin (`net48`). It clones a vanilla trinket, registers forge recipes through Jotunn, and patches pickup. When AzuEPI is loaded, each magnet's item type is AzuEPI's custom type. Otherwise it stays a trinket.
 - `Requirement.GetAmount` is postfixed so upgrade costs can be 10, 20, and 40 instead of a linear step.
-- Vanilla auto-pickup stays at 2 meters. A second pass pulls the extra ring, including when `PullThroughAllWards` is on, and it skips items inside a ward the player cannot access unless that setting is on. Only the nearest player requests ownership. A drop moves only after this client owns it.
+- Vanilla auto-pickup stays at 2 meters, measured from a point 1 meter above the player. A second pass keeps pulling until a drop is half a meter inside that sphere, including when `PullThroughAllWards` is on, and it skips items inside a ward the player cannot access unless that setting is on. Only the nearest player requests ownership. A drop moves only after this client owns it. One drop the magnet cannot read is skipped, and the pass continues.
 
 ## Prerequisites
 
@@ -25,7 +25,10 @@ make build
 make test
 make verify
 make package
+make install
 ```
+
+`make install` reads `GALE_PROFILE` from gitignored `.local.mk` and copies `dist/EvuMagnets/` into that profile.
 
 `make verify` is the gate: fetch references if needed, build, and test. `make package` writes `dist/EvuMagnets-<version>.zip` in the Hexium layout: `manifest.json`, `icon.png`, `README.md`, `CHANGELOG.md`, `EvuMagnets.dll`, and `EvuMagnets.Core.dll` all at the zip root. `icon.png` must be 256×256. `version_number` in the packaged manifest is taken from `version.txt`. Jotunn is a manifest dependency. BepInExPack is not; Hexium assumes it and strips that entry on upload.
 

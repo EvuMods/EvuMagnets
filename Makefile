@@ -1,4 +1,4 @@
-.PHONY: fetch-refs build test verify package clean
+.PHONY: fetch-refs build test verify package install clean
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SOLUTION := $(ROOT)/EvuMagnets.sln
@@ -7,6 +7,13 @@ SOLUTION := $(ROOT)/EvuMagnets.sln
 ifneq ($(wildcard $(HOME)/.dotnet/dotnet),)
 export PATH := $(HOME)/.dotnet:$(PATH)
 export DOTNET_ROOT := $(HOME)/.dotnet
+endif
+
+# The environment and the command line win over the gitignored local file.
+_GALE_PROFILE_ENV := $(GALE_PROFILE)
+-include $(ROOT)/.local.mk
+ifneq ($(_GALE_PROFILE_ENV),)
+GALE_PROFILE := $(_GALE_PROFILE_ENV)
 endif
 
 fetch-refs:
@@ -22,6 +29,11 @@ verify: test
 
 package: build
 	bash "$(ROOT)/scripts/package.sh"
+
+install: package
+	@test -n "$(GALE_PROFILE)" || { echo "Set GALE_PROFILE in .local.mk or the environment" >&2; exit 1; }
+	mkdir -p "$(GALE_PROFILE)/BepInEx/plugins/EvuMagnets"
+	cp -a "$(ROOT)/dist/EvuMagnets/." "$(GALE_PROFILE)/BepInEx/plugins/EvuMagnets/"
 
 clean:
 	dotnet clean "$(SOLUTION)" -c Release

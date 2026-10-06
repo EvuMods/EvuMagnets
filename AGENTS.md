@@ -25,6 +25,8 @@ The mod loads on a dedicated server so the items exist, and on every client. Gam
 
 Run `make verify` after code changes. That fetches reference assemblies when needed, builds the solution, and runs the tests.
 
+In-game installs are `make install`, which reads `GALE_PROFILE` from gitignored `.local.mk`.
+
 Do not commit `.refs/`, `bin/`, `obj/`, or `dist/`. Valheim, BepInEx, and Jotunn binaries stay out of git.
 
 ## Commits

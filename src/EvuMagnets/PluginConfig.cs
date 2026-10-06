@@ -163,6 +163,14 @@ internal sealed class PluginConfig
                 "Key that turns your magnet on or off. This client only.",
                 null,
                 ConfigHints.Local(190)));
+        MaxHits = config.Bind(
+            "Local",
+            "MaxHits",
+            2048,
+            new ConfigDescription(
+                "Most nearby colliders one magnet pass will search. The search starts at 128 and grows to this cap. Lower it if a large pull hitches. This client only.",
+                new AcceptableValueRange<int>(128, 2048),
+                ConfigHints.Local(180)));
 
         var tiers = new Dictionary<string, TierConfig>(StringComparer.Ordinal);
         for (var i = 0; i < MagnetCatalog.All.Count; i++)
@@ -182,6 +190,8 @@ internal sealed class PluginConfig
     public ConfigEntry<bool> Active { get; }
 
     public ConfigEntry<KeyboardShortcut> Toggle { get; }
+
+    public ConfigEntry<int> MaxHits { get; }
 
     public IReadOnlyDictionary<string, TierConfig> Tiers { get; }
 
