@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using EvuMagnets.Core;
 using HarmonyLib;
 using Jotunn.Configs;
@@ -20,9 +19,10 @@ internal static class MagnetItems
     public static void Bind(PluginConfig config)
     {
         _config = config;
+        // Ranges are read live on every pickup pass; only recipe settings need a reapply.
         foreach (var pair in config.Tiers)
         {
-            pair.Value.Listen((_, __) => ApplyRecipes());
+            pair.Value.ListenRecipe((_, __) => ApplyRecipes());
         }
 
         config.Cast.Listen((_, __) => ApplyRecipes());
@@ -44,6 +44,7 @@ internal static class MagnetItems
         }
 
         var source = FindCloneSource();
+        Plugin.Log.LogInfo("Magnets are cloned from " + source + ".");
         var names = new string[MagnetCatalog.All.Count];
         for (var i = 0; i < MagnetCatalog.All.Count; i++)
         {
@@ -106,7 +107,8 @@ internal static class MagnetItems
             }
 
             recipe.m_minStationLevel = settings.StationLevel.Value;
-            if (!TryBuildRequirements(craft, out var requirements))
+            // Upgrade-only items need a row too; GetAmount gives them 0 at quality 1 and vanilla hides that row.
+            if (!TryBuildRequirements(RecipeText.Requirements(craft, upgrades), out var requirements))
             {
                 recipe.m_enabled = false;
                 recipe.m_resources = Array.Empty<Piece.Requirement>();
@@ -121,7 +123,7 @@ internal static class MagnetItems
         ApplyFoundryTime();
     }
 
-    public static bool TryAmount(object requirement, int quality, out int amount)
+    public static bool TryAmount(Piece.Requirement requirement, int quality, out int amount)
     {
         amount = 0;
         if (requirement == null)
@@ -129,7 +131,7 @@ internal static class MagnetItems
             return false;
         }
 
-        var resItem = requirement.GetType().GetField("m_resItem")?.GetValue(requirement) as ItemDrop;
+        var resItem = requirement.m_resItem;
         if (resItem == null || string.IsNullOrEmpty(resItem.name))
         {
             return false;
@@ -184,6 +186,7 @@ internal static class MagnetItems
         shared.m_durabilityDrain = 0f;
         shared.m_equipStatusEffect = null;
         shared.m_setStatusEffect = null;
+        shared.m_fullAdrenalineSE = null;
         shared.m_setName = "";
         shared.m_setSize = 0;
         shared.m_skillType = Skills.SkillType.None;
@@ -331,20 +334,27 @@ internal static class MagnetItems
 
     static string FindCloneSource()
     {
+        // ObjectDB order is not stable across game builds, so take the first trinket by name.
+        string? best = null;
         var items = ObjectDB.instance != null ? ObjectDB.instance.m_items : null;
         if (items != null)
         {
             for (var i = 0; i < items.Count; i++)
             {
                 var drop = items[i] != null ? items[i].GetComponent<ItemDrop>() : null;
-                if (drop != null && drop.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Trinket)
+                if (drop == null || drop.m_itemData.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Trinket)
                 {
-                    return items[i].name;
+                    continue;
+                }
+
+                if (best == null || string.CompareOrdinal(items[i].name, best) < 0)
+                {
+                    best = items[i].name;
                 }
             }
         }
 
-        return "BeltStrength";
+        return best ?? "BeltStrength";
     }
 
     static CraftingStation? FindStation(string name)
@@ -371,20 +381,14 @@ internal static class MagnetItems
                 return false;
             }
 
-            var requirement = new Piece.Requirement
+            requirements[i] = new Piece.Requirement
             {
                 m_resItem = drop,
                 m_amount = craft[i].Amount,
                 m_amountPerLevel = 0,
                 m_recover = true,
+                m_upgraderResource = false,
             };
-            var upgrader = requirement.GetType().GetField("m_upgraderResource");
-            if (upgrader != null && upgrader.FieldType == typeof(bool))
-            {
-                upgrader.SetValue(requirement, false);
-            }
-
-            requirements[i] = requirement;
         }
 
         return true;
@@ -446,16 +450,25 @@ internal static class MagnetItems
         var renderers = prefab.GetComponentsInChildren<Renderer>(true);
         for (var i = 0; i < renderers.Length; i++)
         {
-            var materials = renderers[i].materials;
+            // Copy each material: the clone shares them with the source trinket until it gets its own.
+            var materials = renderers[i].sharedMaterials;
             for (var m = 0; m < materials.Length; m++)
             {
-                if (materials[m] != null && materials[m].HasProperty("_Color"))
+                if (materials[m] == null)
                 {
-                    materials[m].color = color;
+                    continue;
                 }
+
+                var copy = new Material(materials[m]);
+                if (copy.HasProperty("_Color"))
+                {
+                    copy.color = color;
+                }
+
+                materials[m] = copy;
             }
 
-            renderers[i].materials = materials;
+            renderers[i].sharedMaterials = materials;
         }
     }
 
@@ -473,40 +486,10 @@ internal static class MagnetItems
     }
 }
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(Piece.Requirement), nameof(Piece.Requirement.GetAmount))]
 static class RequirementAmountPatch
 {
-    static MethodBase TargetMethod()
-    {
-        Type[] types;
-        try
-        {
-            types = typeof(Recipe).Assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException ex)
-        {
-            types = ex.Types;
-        }
-
-        for (var i = 0; i < types.Length; i++)
-        {
-            var type = types[i];
-            if (type == null || type.Name != "Requirement")
-            {
-                continue;
-            }
-
-            var method = AccessTools.DeclaredMethod(type, "GetAmount", new[] { typeof(int) });
-            if (method != null)
-            {
-                return method;
-            }
-        }
-
-        throw new InvalidOperationException("Requirement.GetAmount(int) was not found.");
-    }
-
-    static void Postfix(object __instance, int qualityLevel, ref int __result)
+    static void Postfix(Piece.Requirement __instance, int qualityLevel, ref int __result)
     {
         if (MagnetItems.TryAmount(__instance, qualityLevel, out var amount))
         {

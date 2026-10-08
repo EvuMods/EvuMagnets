@@ -6,6 +6,8 @@ using UnityEngine;
 
 namespace EvuMagnets;
 
+// Hand-written because UnityEngine.ImageConversionModule targets netstandard 2.1 and does not
+// compile against this net48 plugin. Icons must be 8-bit RGBA, non-interlaced PNGs.
 internal static class ItemIcons
 {
     public static Sprite Load(string id)

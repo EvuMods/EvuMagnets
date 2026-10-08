@@ -84,6 +84,47 @@ public static class RecipeText
         return Sum(upgrades[step], item);
     }
 
+    /// <summary>
+    /// Every distinct item the recipe ever asks for, in first-seen order, with its quality 1 amount.
+    /// Items that appear only in an upgrade step have amount 0 at quality 1.
+    /// </summary>
+    public static IReadOnlyList<Ingredient> Requirements(IReadOnlyList<Ingredient> craft, IReadOnlyList<IReadOnlyList<Ingredient>> upgrades)
+    {
+        var names = new List<string>();
+        AddNames(names, craft);
+        if (upgrades != null)
+        {
+            for (var i = 0; i < upgrades.Count; i++)
+            {
+                AddNames(names, upgrades[i]);
+            }
+        }
+
+        var result = new Ingredient[names.Count];
+        for (var i = 0; i < names.Count; i++)
+        {
+            result[i] = new Ingredient(names[i], Sum(craft, names[i]));
+        }
+
+        return result;
+    }
+
+    static void AddNames(List<string> names, IReadOnlyList<Ingredient> items)
+    {
+        if (items == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (!names.Contains(items[i].Item))
+            {
+                names.Add(items[i].Item);
+            }
+        }
+    }
+
     static int Sum(IReadOnlyList<Ingredient> items, string item)
     {
         if (items == null)

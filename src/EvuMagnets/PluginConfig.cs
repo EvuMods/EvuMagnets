@@ -75,24 +75,8 @@ internal sealed class TierConfig
         ? new[] { Range1.Value }
         : new[] { Range1.Value, Range2.Value, Range3.Value, Range4.Value };
 
-    public void Listen(EventHandler handler)
+    public void ListenRecipe(EventHandler handler)
     {
-        Range1.SettingChanged += handler;
-        if (Range2 != null)
-        {
-            Range2.SettingChanged += handler;
-        }
-
-        if (Range3 != null)
-        {
-            Range3.SettingChanged += handler;
-        }
-
-        if (Range4 != null)
-        {
-            Range4.SettingChanged += handler;
-        }
-
         if (Craft != null)
         {
             Craft.SettingChanged += handler;

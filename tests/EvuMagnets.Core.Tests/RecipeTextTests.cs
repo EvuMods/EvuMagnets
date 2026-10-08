@@ -52,6 +52,21 @@ public sealed class RecipeTextTests
     }
 
     [Fact]
+    public void Requirements_IncludeUpgradeOnlyItemsWithZeroAtQualityOne()
+    {
+        Assert.True(RecipeText.TryParseList("Iron:20,Thunderstone:1", out var craft, out _));
+        Assert.True(RecipeText.TryParseUpgrades("Silver:10;Silver:20,Thunderstone:2;Silver:40", out var steps, out _));
+
+        var all = RecipeText.Requirements(craft, steps);
+        Assert.Equal(new[] { "Iron", "Thunderstone", "Silver" }, Names(all));
+        Assert.Equal(new[] { 20, 1, 0 }, Amounts(all));
+
+        Assert.Equal(0, RecipeText.AmountFor(1, "Silver", craft, steps));
+        Assert.Equal(10, RecipeText.AmountFor(2, "Silver", craft, steps));
+        Assert.Equal(0, RecipeText.AmountFor(2, "Iron", craft, steps));
+    }
+
+    [Fact]
     public void Cast_UsesTheBlackForgeRecipe()
     {
         Assert.Equal("blackforge", MagnetCast.Station);

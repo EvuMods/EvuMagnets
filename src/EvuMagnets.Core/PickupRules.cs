@@ -77,16 +77,36 @@ public static class PickupRules
         return pullThroughAllWards || playerHasAccess;
     }
 
+    public static float Reach(float publishedRange)
+    {
+        return publishedRange > VanillaRange ? publishedRange : VanillaRange;
+    }
+
+    public static bool CanReach(float distance, float reach)
+    {
+        return distance <= reach;
+    }
+
     public static string? ActivePrefab(bool slotExists, string? slotPrefab, IReadOnlyList<string>? equippedPrefabs)
     {
-        var magnets = new List<string>();
+        string? first = null;
+        var count = 0;
+        var slotListed = false;
         if (equippedPrefabs != null)
         {
             for (var i = 0; i < equippedPrefabs.Count; i++)
             {
-                if (IsMagnet(equippedPrefabs[i]))
+                var name = equippedPrefabs[i];
+                if (!IsMagnet(name))
                 {
-                    magnets.Add(equippedPrefabs[i]);
+                    continue;
+                }
+
+                count++;
+                first ??= name;
+                if (slotPrefab != null && string.Equals(name, slotPrefab, StringComparison.Ordinal))
+                {
+                    slotListed = true;
                 }
             }
         }
@@ -98,35 +118,15 @@ public static class PickupRules
                 return null;
             }
 
-            var listed = false;
-            for (var i = 0; i < magnets.Count; i++)
+            if (!slotListed)
             {
-                if (string.Equals(magnets[i], slotPrefab, StringComparison.Ordinal))
-                {
-                    listed = true;
-                    break;
-                }
+                count++;
             }
 
-            if (!listed)
-            {
-                magnets.Add(slotPrefab);
-            }
-
-            if (magnets.Count != 1)
-            {
-                return null;
-            }
-
-            return slotPrefab;
+            return count == 1 ? slotPrefab : null;
         }
 
-        if (magnets.Count != 1)
-        {
-            return null;
-        }
-
-        return magnets[0];
+        return count == 1 ? first : null;
     }
 
     public static bool TryExchangeMagnetSlot(

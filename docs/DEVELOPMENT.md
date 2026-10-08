@@ -5,7 +5,7 @@
 - `src/EvuMagnets.Core` holds the tier table, recipe text, carry check, and the rule for which magnet is active. It targets `netstandard2.0` and does not reference Unity.
 - `src/EvuMagnets` is the BepInEx plugin (`net48`). It clones a vanilla trinket, registers forge recipes through Jotunn, and patches pickup. When AzuEPI is loaded, each magnet's item type is utility, so the Utility slot leaves the Magnet slot alone. Otherwise it stays a trinket.
 - `Requirement.GetAmount` is postfixed so upgrade costs can be 10, 20, and 40 instead of a linear step.
-- Vanilla auto-pickup stays at 2 meters, measured from a point 1 meter above the player. A second pass keeps pulling until a drop is half a meter inside that sphere, including when `PullThroughAllWards` is on, and it skips items inside a ward the player cannot access unless that setting is on. Only the nearest player requests ownership. A drop moves only after this client owns it. One drop the magnet cannot read is skipped, and the pass continues.
+- Vanilla auto-pickup stays at 2 meters, measured from a point 1 meter above the player. A second pass keeps pulling until a drop is half a meter inside that sphere, including when `PullThroughAllWards` is on, and it skips items inside a ward the player cannot access unless that setting is on. Each client writes its current reach to its player ZDO, and only the nearest player who can reach a drop requests ownership. A drop moves only after this client owns it. One drop the magnet cannot read is skipped, and the pass continues.
 
 ## Prerequisites
 
@@ -57,6 +57,9 @@ There is no automated playtest here. After an item or pickup change, confirm:
 - Two magnets cannot stay equipped. The bonus stays off if they do.
 - With AzuExtendedPlayerInventory, a picked-up magnet lands in the Magnet slot. After login, that equipped magnet is still in the Magnet slot, beside a trinket and a utility item. Without AzuEPI it equips as a trinket.
 - Two players near one drop: it moves toward the nearer player.
+- A magnet player pulls a drop that a closer player without a magnet cannot reach.
+- Using a magnet while swimming, without a mod that allows equipping there, leaves the current magnet equipped.
+- An upgrade-only ingredient shows at quality 2 and not at quality 1.
 - The horseshoe opening shows the blue plate of an equipped slot.
 - Inside your own ward, the extra range still works. Inside someone else's ward, it does not, until PullThroughAllWards is on.
 - The forge recipes match the config, including the 10, 20, and 40 upgrade steps.

@@ -10,7 +10,13 @@ namespace EvuMagnets;
 internal static class AzuMagnetSlot
 {
     const string SlotName = "Magnet";
+    const string ApiTypeName = "AzuEPI.API, AzuExtendedPlayerInventory";
     static bool _loggedFailure;
+    static Type _api;
+    static CachedCall _slotIndex;
+    static CachedCall _equippedItem;
+    static CachedCall _gridPos;
+    static int _cachedIndex = -1;
 
     public static bool Exists { get; private set; }
 
@@ -18,7 +24,7 @@ internal static class AzuMagnetSlot
     {
         get
         {
-            var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
+            var api = Type.GetType(ApiTypeName);
             if (api == null)
             {
                 return false;
@@ -32,7 +38,9 @@ internal static class AzuMagnetSlot
     public static void Register(IReadOnlyList<string> prefabs)
     {
         Exists = false;
-        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
+        _api = null;
+        _cachedIndex = -1;
+        var api = Type.GetType(ApiTypeName);
         if (api == null)
         {
             return;
@@ -56,6 +64,10 @@ internal static class AzuMagnetSlot
             return;
         }
 
+        _api = api;
+        _slotIndex = CachedCall.For(api, "TryGetSlotIndexByName");
+        _equippedItem = CachedCall.For(api, "TryGetEquippedItem");
+        _gridPos = CachedCall.For(api, "GetSlotGridPos");
         Exists = true;
         Plugin.Log.LogInfo("AzuEPI Magnet slot registered.");
     }
@@ -63,18 +75,12 @@ internal static class AzuMagnetSlot
     public static bool TryGetEquippedPrefab(out string prefabName)
     {
         prefabName = null;
-        if (!Exists)
+        if (!Exists || !TrySlotIndex(out var index))
         {
             return false;
         }
 
-        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
-        if (api == null || !TrySlotIndex(api, out var index))
-        {
-            return false;
-        }
-
-        if (!TryEquippedItem(api, index, out var item) || item == null)
+        if (!TryEquippedItem(index, out var item) || item == null)
         {
             return false;
         }
@@ -90,12 +96,12 @@ internal static class AzuMagnetSlot
             return false;
         }
 
-        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
         var inventory = player.GetInventory();
-        if (api == null || inventory == null || !TrySlotIndex(api, out var index) || !TryGrid(api, inventory, index, out var x, out var y))
+        if (inventory == null || !TryGetSlotGrid(inventory, out var x, out var y))
         {
             return false;
         }
+
         var occupant = inventory.GetItemAt(x, y);
         if (occupant != null && !ReferenceEquals(occupant, item))
         {
@@ -104,42 +110,29 @@ internal static class AzuMagnetSlot
 
         if (item.m_gridPos.x == x && item.m_gridPos.y == y)
         {
-            item.m_equipped = true;
             return true;
         }
 
         var moved = inventory.MoveItemToThis(inventory, item, item.m_stack, x, y);
-        if (!moved)
+        if (!moved && !_loggedFailure)
         {
-            if (!_loggedFailure)
-            {
-                _loggedFailure = true;
-                Plugin.Log.LogWarning("Could not move a magnet into the AzuEPI Magnet slot.");
-            }
-
-            return false;
+            _loggedFailure = true;
+            Plugin.Log.LogWarning("Could not move a magnet into the AzuEPI Magnet slot.");
         }
 
-        item.m_equipped = true;
-        return true;
+        return moved;
     }
 
     public static bool TryGetSlotGrid(Inventory inventory, out int x, out int y)
     {
         x = -1;
         y = -1;
-        if (!Exists || inventory == null)
+        if (!Exists || inventory == null || !TrySlotIndex(out var index))
         {
             return false;
         }
 
-        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
-        if (api == null || !TrySlotIndex(api, out var index))
-        {
-            return false;
-        }
-
-        return TryGrid(api, inventory, index, out x, out y);
+        return TryGrid(inventory, index, out x, out y);
     }
 
     static bool TryAdd(Type api, string[] prefabs)
@@ -206,24 +199,28 @@ internal static class AzuMagnetSlot
         return !(result is bool ok) || ok;
     }
 
-    static bool TrySlotIndex(Type api, out int index)
+    static bool TrySlotIndex(out int index)
     {
-        index = -1;
-        var method = api.GetMethod("TryGetSlotIndexByName", BindingFlags.Public | BindingFlags.Static);
-        if (method == null)
+        index = _cachedIndex;
+        if (index >= 0)
+        {
+            return true;
+        }
+
+        if (_api == null || _slotIndex == null)
         {
             return false;
         }
 
-        var parameters = method.GetParameters();
-        var args = new object[parameters.Length];
+        var parameters = _slotIndex.Parameters;
+        var args = _slotIndex.Args;
         args[0] = SlotName;
         for (var i = 1; i < parameters.Length; i++)
         {
             args[i] = Default(parameters[i].ParameterType);
         }
 
-        var found = (bool)method.Invoke(null, args);
+        var found = (bool)_slotIndex.Method.Invoke(null, args);
         for (var i = 0; i < parameters.Length; i++)
         {
             if (parameters[i].ParameterType == typeof(int).MakeByRefType())
@@ -232,29 +229,31 @@ internal static class AzuMagnetSlot
             }
         }
 
+        if (found && index >= 0)
+        {
+            _cachedIndex = index;
+        }
+
         return found;
     }
 
-    static bool TryEquippedItem(Type api, int index, out ItemDrop.ItemData item)
+    static bool TryEquippedItem(int index, out ItemDrop.ItemData item)
     {
         item = null;
-        var method = api.GetMethod("TryGetEquippedItem", BindingFlags.Public | BindingFlags.Static);
-        if (method == null)
+        if (_equippedItem == null)
         {
             return false;
         }
 
-        var parameters = method.GetParameters();
-        var args = new object[parameters.Length];
+        var parameters = _equippedItem.Parameters;
+        var args = _equippedItem.Args;
         var itemSlot = -1;
-        var indexSlot = 0;
         for (var i = 0; i < parameters.Length; i++)
         {
             var type = parameters[i].ParameterType;
             if (type == typeof(int))
             {
                 args[i] = index;
-                indexSlot = i;
             }
             else if (type.IsByRef && type.GetElementType() == typeof(ItemDrop.ItemData))
             {
@@ -267,32 +266,27 @@ internal static class AzuMagnetSlot
             }
         }
 
-        if (parameters.Length > 0 && parameters[0].ParameterType == typeof(int))
-        {
-            args[indexSlot] = index;
-        }
-
-        var found = (bool)method.Invoke(null, args);
+        var found = (bool)_equippedItem.Method.Invoke(null, args);
         if (itemSlot >= 0)
         {
             item = args[itemSlot] as ItemDrop.ItemData;
+            args[itemSlot] = null;
         }
 
         return found && item != null;
     }
 
-    static bool TryGrid(Type api, Inventory inventory, int index, out int x, out int y)
+    static bool TryGrid(Inventory inventory, int index, out int x, out int y)
     {
         x = -1;
         y = -1;
-        var method = api.GetMethod("GetSlotGridPos", BindingFlags.Public | BindingFlags.Static);
-        if (method == null)
+        if (_gridPos == null)
         {
             return false;
         }
 
-        var parameters = method.GetParameters();
-        var args = new object[parameters.Length];
+        var parameters = _gridPos.Parameters;
+        var args = _gridPos.Args;
         for (var i = 0; i < parameters.Length; i++)
         {
             var type = parameters[i].ParameterType;
@@ -310,7 +304,8 @@ internal static class AzuMagnetSlot
             }
         }
 
-        var result = method.Invoke(null, args);
+        var result = _gridPos.Method.Invoke(null, args);
+        var read = false;
         if (result != null)
         {
             var resultType = result.GetType();
@@ -320,26 +315,35 @@ internal static class AzuMagnetSlot
             {
                 x = Convert.ToInt32(xField.GetValue(result));
                 y = Convert.ToInt32(yField.GetValue(result));
-                return x >= 0 && y >= 0;
+                read = true;
             }
         }
 
-        for (var i = 0; i < parameters.Length; i++)
+        if (!read)
         {
-            if (parameters[i].ParameterType == typeof(int).MakeByRefType())
+            for (var i = 0; i < parameters.Length; i++)
             {
-                if (x < 0)
+                if (parameters[i].ParameterType == typeof(int).MakeByRefType())
                 {
-                    x = (int)args[i];
-                }
-                else
-                {
-                    y = (int)args[i];
+                    if (x < 0)
+                    {
+                        x = (int)args[i];
+                    }
+                    else
+                    {
+                        y = (int)args[i];
+                    }
                 }
             }
         }
 
-        return x >= 0 && y >= 0;
+        for (var i = 0; i < args.Length; i++)
+        {
+            args[i] = null;
+        }
+
+        // AzuEPI reports a cell past the last row when its equipment row is off.
+        return x >= 0 && y >= 0 && x < inventory.GetWidth() && y < inventory.GetHeight();
     }
 
     static bool AcceptsStrings(Type type)
@@ -372,5 +376,27 @@ internal static class AzuMagnetSlot
         }
 
         return null;
+    }
+
+    sealed class CachedCall
+    {
+        CachedCall(MethodInfo method)
+        {
+            Method = method;
+            Parameters = method.GetParameters();
+            Args = new object[Parameters.Length];
+        }
+
+        public MethodInfo Method { get; }
+
+        public ParameterInfo[] Parameters { get; }
+
+        public object[] Args { get; }
+
+        public static CachedCall For(Type api, string name)
+        {
+            var method = api.GetMethod(name, BindingFlags.Public | BindingFlags.Static);
+            return method != null ? new CachedCall(method) : null;
+        }
     }
 }

@@ -150,6 +150,29 @@ public sealed class PickupRulesTests
     }
 
     [Fact]
+    public void Reach_IsAtLeastVanilla()
+    {
+        Assert.Equal(PickupRules.VanillaRange, PickupRules.Reach(0f));
+        Assert.Equal(PickupRules.VanillaRange, PickupRules.Reach(1f));
+        Assert.Equal(8f, PickupRules.Reach(8f));
+    }
+
+    [Fact]
+    public void Claim_IgnoresAPlayerWhoCannotReachTheDrop()
+    {
+        // A vanilla-range player 3 meters from the drop cannot take it, so they never join the claim list.
+        Assert.False(PickupRules.CanReach(3f, PickupRules.Reach(0f)));
+        Assert.True(PickupRules.CanReach(3f, PickupRules.Reach(4f)));
+        Assert.True(PickupRules.CanReach(1.5f, PickupRules.Reach(0f)));
+
+        var others = new PickupRules.ClaimDistance[0];
+        Assert.True(PickupRules.IsBestClaim(8f, 9, others, PickupRules.ClaimMargin));
+
+        var magnetPlayerNearer = new[] { new PickupRules.ClaimDistance(3f, 2) };
+        Assert.False(PickupRules.IsBestClaim(8f, 9, magnetPlayerNearer, PickupRules.ClaimMargin));
+    }
+
+    [Fact]
     public void Pull_StopsOnThePlayerWithoutChangingHeight()
     {
         PickupRules.PullOffset(0f, 0f, 10f, 0f, PickupRules.PullSpeed, 10f, out var offsetX, out var offsetZ);

@@ -14,24 +14,30 @@ static class PickupPatch
     static readonly List<PickupRules.ClaimDistance> Claims = new List<PickupRules.ClaimDistance>();
     static bool _loggedDropFailure;
 
-    static void Prefix(Player __instance, ref float __state)
+    struct Pass
     {
-        __state = __instance.m_autoPickupRange;
-        if (!ShouldExtend(__instance, out _))
-        {
-            return;
-        }
-
-        __instance.m_autoPickupRange = PickupRules.VanillaRange;
+        public float OriginalRange;
+        public bool Extend;
+        public float Range;
     }
 
-    static void Postfix(Player __instance, float dt, float __state)
+    static void Prefix(Player __instance, ref Pass __state)
     {
-        var extend = ShouldExtend(__instance, out var range);
-        __instance.m_autoPickupRange = __state;
-        if (extend)
+        __state.OriginalRange = __instance.m_autoPickupRange;
+        __state.Extend = ShouldExtend(__instance, out __state.Range);
+        MagnetReach.Publish(__instance, __state.Extend ? __state.Range : 0f);
+        if (__state.Extend)
         {
-            PullExtraRing(__instance, dt, range);
+            __instance.m_autoPickupRange = PickupRules.VanillaRange;
+        }
+    }
+
+    static void Postfix(Player __instance, float dt, Pass __state)
+    {
+        __instance.m_autoPickupRange = __state.OriginalRange;
+        if (__state.Extend)
+        {
+            PullExtraRing(__instance, dt, __state.Range);
         }
     }
 
@@ -134,7 +140,6 @@ static class PickupPatch
             return;
         }
 
-        drop.Load();
         var data = drop.m_itemData;
         if (!inventory.CanAddItem(data, -1)
             || !PickupRules.FitsCarry(inventory.GetTotalWeight(), data.GetWeight(-1), player.GetMaxCarryWeight()))
@@ -154,10 +159,13 @@ static class PickupPatch
             return;
         }
 
-        if (!best || !drop.CanPickup())
+        if (!best || !drop.CanPickup(true))
         {
             return;
         }
+
+        // Vanilla reads the ZDO only once this client owns the drop.
+        drop.Load();
 
         if (inReach)
         {
@@ -238,14 +246,19 @@ static class PickupPatch
         for (var i = 0; i < players.Count; i++)
         {
             var other = players[i];
-            if (other == null || ReferenceEquals(other, player))
+            if (other == null || ReferenceEquals(other, player) || other.IsDead() || other.IsTeleporting())
             {
                 continue;
             }
 
-            Claims.Add(new PickupRules.ClaimDistance(
-                HorizontalDistance(other.transform.position, itemPosition),
-                other.GetPlayerID()));
+            // Only a player whose own reach covers the drop can take it, so only they count.
+            var distance = HorizontalDistance(other.transform.position, itemPosition);
+            if (!PickupRules.CanReach(distance, MagnetReach.Of(other)))
+            {
+                continue;
+            }
+
+            Claims.Add(new PickupRules.ClaimDistance(distance, other.GetPlayerID()));
         }
     }
 

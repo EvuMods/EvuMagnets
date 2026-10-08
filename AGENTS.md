@@ -11,7 +11,7 @@ These instructions apply to the EvuMagnets repository.
 
 ## Product Boundary
 
-EvuMagnets adds five trinket magnets. Equipping one raises the local player's auto-pickup radius. The pull, the ownership handoff, and the carry check stay on Valheim's pickup path. A global Enabled setting, on by default, leaves that radius at 2 meters when off.
+EvuMagnets adds five magnets. Equipping one raises the local player's auto-pickup radius. The pull, the ownership handoff, and the carry check stay on Valheim's pickup path. A global Enabled setting, on by default, leaves that radius at 2 meters when off.
 
 The mod loads on a dedicated server so the items exist, and on every client. Gameplay settings sync from that server. The local magnet pause does not. Jotunn is a hard dependency. AzuExtendedPlayerInventory is a soft dependency: when it is present, magnets equip into a Magnet slot ahead of the trinket slot.
 

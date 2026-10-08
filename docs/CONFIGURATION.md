@@ -29,7 +29,7 @@ Iron, Silver, Black metal, and Flametal each have the same keys.
 | --- | --- |
 | Range1–Range4 | Pickup radius in meters at that quality. The floor is the vanilla 2 meters. |
 | Craft | Ingredients for a new magnet. Item prefab names and amounts, separated by commas, such as `Iron:20,Thunderstone:1,Ectoplasm:5`. |
-| Upgrades | Three upgrade steps, separated by semicolons. Each step is `Item:Amount` pairs separated by commas. |
+| Upgrades | Three upgrade steps, separated by semicolons. Each step is `Item:Amount` pairs separated by commas. A step may use items that are not in Craft; those rows are hidden at quality 1. |
 | Station | Crafting station prefab name. Iron, silver, and black metal use `forge`. Flametal uses `blackforge`. |
 | StationLevel | Station level required to make quality 1. Each upgrade asks for one level more. |
 

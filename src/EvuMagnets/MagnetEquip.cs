@@ -7,7 +7,9 @@ namespace EvuMagnets;
 
 internal static class MagnetEquip
 {
+    static readonly List<string> EquippedNames = new List<string>();
     static int _reconciledId;
+    static bool _loggedNoCell;
 
     public static void ReconcileAfterLoad(Player? player)
     {
@@ -22,12 +24,31 @@ internal static class MagnetEquip
             return;
         }
 
-        if (!PlaceEquippedMagnet(player))
+        _reconciledId = id;
+        var inventory = player.GetInventory();
+        if (inventory == null)
         {
             return;
         }
 
-        _reconciledId = id;
+        var magnet = DedupeEquipped(player, inventory);
+        if (magnet == null)
+        {
+            return;
+        }
+
+        if (!AzuMagnetSlot.TryGetSlotGrid(inventory, out var slotX, out var slotY))
+        {
+            if (!_loggedNoCell)
+            {
+                _loggedNoCell = true;
+                Plugin.Log.LogInfo("Magnet slot has no grid cell; leaving the magnet where it is.");
+            }
+
+            return;
+        }
+
+        PlaceEquippedMagnet(inventory, magnet, slotX, slotY);
     }
 
     public static void OnEquipped(Player player, ItemDrop.ItemData item)
@@ -42,12 +63,16 @@ internal static class MagnetEquip
             AzuMagnetSlot.TryMoveToSlot(player, item);
         }
 
-        var inventory = player.GetInventory();
-        var equipped = inventory.GetEquippedItems();
+        UnequipOtherMagnets(player, item);
+    }
+
+    static void UnequipOtherMagnets(Player player, ItemDrop.ItemData keep)
+    {
+        var equipped = player.GetInventory().GetEquippedItems();
         for (var i = 0; i < equipped.Count; i++)
         {
             var other = equipped[i];
-            if (other == null || ReferenceEquals(other, item) || !PickupRules.IsMagnet(PrefabName(other)))
+            if (other == null || ReferenceEquals(other, keep) || !PickupRules.IsMagnet(PrefabName(other)))
             {
                 continue;
             }
@@ -56,20 +81,37 @@ internal static class MagnetEquip
         }
     }
 
-    static bool PlaceEquippedMagnet(Player player)
+    static ItemDrop.ItemData? DedupeEquipped(Player player, Inventory inventory)
     {
-        var inventory = player.GetInventory();
-        if (inventory == null || !AzuMagnetSlot.TryGetSlotGrid(inventory, out var slotX, out var slotY))
+        ItemDrop.ItemData? keep = null;
+        var count = 0;
+        var items = inventory.GetAllItems();
+        AzuMagnetSlot.TryGetEquippedPrefab(out var slotPrefab);
+        for (var i = 0; i < items.Count; i++)
         {
-            return false;
+            var item = items[i];
+            if (item == null || !item.m_equipped || !PickupRules.IsMagnet(PrefabName(item)))
+            {
+                continue;
+            }
+
+            count++;
+            if (keep == null || (slotPrefab != null && PrefabName(item) == slotPrefab))
+            {
+                keep = item;
+            }
         }
 
-        var magnet = EquippedMagnet(inventory);
-        if (magnet == null)
+        if (count > 1 && keep != null)
         {
-            return true;
+            UnequipOtherMagnets(player, keep);
         }
 
+        return keep;
+    }
+
+    static void PlaceEquippedMagnet(Inventory inventory, ItemDrop.ItemData magnet, int slotX, int slotY)
+    {
         if (!PickupRules.TryExchangeMagnetSlot(
             magnet.m_equipped,
             magnet.m_gridPos.x,
@@ -81,7 +123,7 @@ internal static class MagnetEquip
             out var occupantToX,
             out var occupantToY))
         {
-            return true;
+            return;
         }
 
         var occupant = inventory.GetItemAt(slotX, slotY);
@@ -91,23 +133,7 @@ internal static class MagnetEquip
         }
 
         magnet.m_gridPos = new Vector2i(magnetToX, magnetToY);
-        magnet.m_equipped = true;
-        return true;
-    }
-
-    static ItemDrop.ItemData? EquippedMagnet(Inventory inventory)
-    {
-        var items = inventory.GetAllItems();
-        for (var i = 0; i < items.Count; i++)
-        {
-            var item = items[i];
-            if (item != null && item.m_equipped && PickupRules.IsMagnet(PrefabName(item)))
-            {
-                return item;
-            }
-        }
-
-        return null;
+        inventory.Changed();
     }
 
     public static string? ActivePrefab(Player? player)
@@ -118,18 +144,18 @@ internal static class MagnetEquip
         }
 
         var equipped = player.GetInventory().GetEquippedItems();
-        var names = new List<string>(equipped.Count);
+        EquippedNames.Clear();
         for (var i = 0; i < equipped.Count; i++)
         {
             var name = PrefabName(equipped[i]);
             if (name != null)
             {
-                names.Add(name);
+                EquippedNames.Add(name);
             }
         }
 
         AzuMagnetSlot.TryGetEquippedPrefab(out var slotPrefab);
-        return PickupRules.ActivePrefab(AzuMagnetSlot.Exists, slotPrefab, names);
+        return PickupRules.ActivePrefab(AzuMagnetSlot.Exists, slotPrefab, EquippedNames);
     }
 
     public static float ActiveRange(Player player, PluginConfig config)
@@ -174,9 +200,11 @@ internal static class MagnetEquip
 static class EquipPatch
 {
     [HarmonyPriority(Priority.Last)]
-    static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
+    static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool __result)
     {
-        if (__instance is Player player)
+        // A refused equip (swimming, attacking, dodging) returns false. Mods that allow
+        // equipping in those states return true, so this follows them without a check of our own.
+        if (__result && __instance is Player player)
         {
             MagnetEquip.OnEquipped(player, item);
         }
