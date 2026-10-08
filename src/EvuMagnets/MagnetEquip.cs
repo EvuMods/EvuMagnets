@@ -7,9 +7,32 @@ namespace EvuMagnets;
 
 internal static class MagnetEquip
 {
+    static int _reconciledId;
+
+    public static void ReconcileAfterLoad(Player? player)
+    {
+        if (player == null || player.m_isLoading || !AzuMagnetSlot.Exists)
+        {
+            return;
+        }
+
+        var id = player.GetInstanceID();
+        if (_reconciledId == id)
+        {
+            return;
+        }
+
+        if (!PlaceEquippedMagnet(player))
+        {
+            return;
+        }
+
+        _reconciledId = id;
+    }
+
     public static void OnEquipped(Player player, ItemDrop.ItemData item)
     {
-        if (player == null || item == null || !PickupRules.IsMagnet(PrefabName(item)))
+        if (player == null || item == null || player.m_isLoading || !PickupRules.IsMagnet(PrefabName(item)))
         {
             return;
         }
@@ -31,8 +54,60 @@ internal static class MagnetEquip
 
             player.UnequipItem(other, false);
         }
+    }
 
-        player.SetupEquipment();
+    static bool PlaceEquippedMagnet(Player player)
+    {
+        var inventory = player.GetInventory();
+        if (inventory == null || !AzuMagnetSlot.TryGetSlotGrid(inventory, out var slotX, out var slotY))
+        {
+            return false;
+        }
+
+        var magnet = EquippedMagnet(inventory);
+        if (magnet == null)
+        {
+            return true;
+        }
+
+        if (!PickupRules.TryExchangeMagnetSlot(
+            magnet.m_equipped,
+            magnet.m_gridPos.x,
+            magnet.m_gridPos.y,
+            slotX,
+            slotY,
+            out var magnetToX,
+            out var magnetToY,
+            out var occupantToX,
+            out var occupantToY))
+        {
+            return true;
+        }
+
+        var occupant = inventory.GetItemAt(slotX, slotY);
+        if (occupant != null && !ReferenceEquals(occupant, magnet))
+        {
+            occupant.m_gridPos = new Vector2i(occupantToX, occupantToY);
+        }
+
+        magnet.m_gridPos = new Vector2i(magnetToX, magnetToY);
+        magnet.m_equipped = true;
+        return true;
+    }
+
+    static ItemDrop.ItemData? EquippedMagnet(Inventory inventory)
+    {
+        var items = inventory.GetAllItems();
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            if (item != null && item.m_equipped && PickupRules.IsMagnet(PrefabName(item)))
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     public static string? ActivePrefab(Player? player)

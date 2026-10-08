@@ -14,36 +14,19 @@ internal static class AzuMagnetSlot
 
     public static bool Exists { get; private set; }
 
-    public static bool TryGetFakeItemType(out ItemDrop.ItemData.ItemType itemType)
+    public static bool Loaded
     {
-        itemType = ItemDrop.ItemData.ItemType.Trinket;
-        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
-        if (api == null)
+        get
         {
-            return false;
-        }
+            var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
+            if (api == null)
+            {
+                return false;
+            }
 
-        var loaded = api.GetMethod("IsLoaded", BindingFlags.Public | BindingFlags.Static);
-        if (loaded == null || !(bool)loaded.Invoke(null, null))
-        {
-            return false;
+            var loaded = api.GetMethod("IsLoaded", BindingFlags.Public | BindingFlags.Static);
+            return loaded != null && (bool)loaded.Invoke(null, null);
         }
-
-        var method = api.GetMethod("GetFakeItemType", BindingFlags.Public | BindingFlags.Static);
-        if (method == null || method.GetParameters().Length != 0)
-        {
-            return false;
-        }
-
-        if (!(method.Invoke(null, null) is ItemDrop.ItemData.ItemType fake)
-            || fake == ItemDrop.ItemData.ItemType.None
-            || fake == ItemDrop.ItemData.ItemType.Trinket)
-        {
-            return false;
-        }
-
-        itemType = fake;
-        return true;
     }
 
     public static void Register(IReadOnlyList<string> prefabs)
@@ -139,6 +122,24 @@ internal static class AzuMagnetSlot
 
         item.m_equipped = true;
         return true;
+    }
+
+    public static bool TryGetSlotGrid(Inventory inventory, out int x, out int y)
+    {
+        x = -1;
+        y = -1;
+        if (!Exists || inventory == null)
+        {
+            return false;
+        }
+
+        var api = Type.GetType("AzuEPI.API, AzuExtendedPlayerInventory");
+        if (api == null || !TrySlotIndex(api, out var index))
+        {
+            return false;
+        }
+
+        return TryGrid(api, inventory, index, out x, out y);
     }
 
     static bool TryAdd(Type api, string[] prefabs)

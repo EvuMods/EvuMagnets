@@ -129,6 +129,29 @@ public static class PickupRules
         return magnets[0];
     }
 
+    public static bool TryExchangeMagnetSlot(
+        bool magnetEquipped,
+        int magnetX,
+        int magnetY,
+        int slotX,
+        int slotY,
+        out int magnetToX,
+        out int magnetToY,
+        out int occupantToX,
+        out int occupantToY)
+    {
+        magnetToX = slotX;
+        magnetToY = slotY;
+        occupantToX = magnetX;
+        occupantToY = magnetY;
+        if (!magnetEquipped)
+        {
+            return false;
+        }
+
+        return magnetX != slotX || magnetY != slotY;
+    }
+
     public static bool IsBestClaim(float myDistance, long myId, IReadOnlyList<ClaimDistance> others, float margin)
     {
         if (others == null)

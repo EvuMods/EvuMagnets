@@ -37,9 +37,10 @@ internal static class MagnetItems
 
         _registered = true;
         AddTranslations();
-        if (AzuMagnetSlot.TryGetFakeItemType(out _))
+        var utilityType = AzuMagnetSlot.Loaded;
+        if (utilityType)
         {
-            Plugin.Log.LogInfo("AzuEPI is loaded. Magnets use its custom item type.");
+            Plugin.Log.LogInfo("AzuEPI is loaded. Magnets use the utility item type.");
         }
 
         var source = FindCloneSource();
@@ -48,7 +49,7 @@ internal static class MagnetItems
         {
             var tier = MagnetCatalog.All[i];
             names[i] = tier.PrefabName;
-            RegisterTier(tier, source);
+            RegisterTier(tier, source, utilityType);
         }
 
         AzuMagnetSlot.Register(names);
@@ -159,7 +160,7 @@ internal static class MagnetItems
         return false;
     }
 
-    static void RegisterTier(MagnetTierInfo tier, string source)
+    static void RegisterTier(MagnetTierInfo tier, string source, bool utilityType)
     {
         var prefab = PrefabManager.Instance.CreateClonedPrefab(tier.PrefabName, source);
         if (prefab == null)
@@ -172,8 +173,8 @@ internal static class MagnetItems
         var shared = drop.m_itemData.m_shared;
         shared.m_name = "$" + tier.Token;
         shared.m_description = "$" + tier.Token + "_desc";
-        shared.m_itemType = AzuMagnetSlot.TryGetFakeItemType(out var magnetType)
-            ? magnetType
+        shared.m_itemType = utilityType
+            ? ItemDrop.ItemData.ItemType.Utility
             : ItemDrop.ItemData.ItemType.Trinket;
         shared.m_maxStackSize = 1;
         shared.m_weight = 2f;

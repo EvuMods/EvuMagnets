@@ -37,6 +37,7 @@ public sealed class Plugin : BaseUnityPlugin
 
     void Update()
     {
+        MagnetEquip.ReconcileAfterLoad(Player.m_localPlayer);
         if (Settings == null || !Settings.Toggle.Value.IsDown() || Typing())
         {
             return;

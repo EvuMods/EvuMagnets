@@ -94,6 +94,27 @@ public sealed class PickupRulesTests
     }
 
     [Fact]
+    public void EquippedMagnet_ExchangesWithTheSlotOccupant()
+    {
+        Assert.True(PickupRules.TryExchangeMagnetSlot(
+            true,
+            4,
+            5,
+            0,
+            5,
+            out var magnetX,
+            out var magnetY,
+            out var occupantX,
+            out var occupantY));
+        Assert.Equal(0, magnetX);
+        Assert.Equal(5, magnetY);
+        Assert.Equal(4, occupantX);
+        Assert.Equal(5, occupantY);
+        Assert.False(PickupRules.TryExchangeMagnetSlot(true, 0, 5, 0, 5, out _, out _, out _, out _));
+        Assert.False(PickupRules.TryExchangeMagnetSlot(false, 1, 2, 0, 5, out _, out _, out _, out _));
+    }
+
+    [Fact]
     public void MagnetSlot_WinsOverTheTrinketSlot()
     {
         Assert.Equal(
