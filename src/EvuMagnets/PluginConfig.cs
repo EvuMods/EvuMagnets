@@ -21,7 +21,7 @@ internal sealed class TierConfig
         Range2 = BindRange(config, section, "Range2", tier.Ranges[1], "Pickup radius in meters at quality 2.", order - 1);
         Range3 = BindRange(config, section, "Range3", tier.Ranges[2], "Pickup radius in meters at quality 3.", order - 2);
         Range4 = BindRange(config, section, "Range4", tier.Ranges[3], "Pickup radius in meters at quality 4.", order - 3);
-        Craft = config.Bind(
+        var craft = config.Bind(
             section,
             "Craft",
             tier.Craft,
@@ -29,7 +29,7 @@ internal sealed class TierConfig
                 "Ingredients for a new magnet. Item prefab names and amounts, separated by commas.",
                 null,
                 ConfigHints.Synced(order - 4)));
-        Upgrades = config.Bind(
+        var upgrades = config.Bind(
             section,
             "Upgrades",
             tier.Upgrades,
@@ -37,6 +37,17 @@ internal sealed class TierConfig
                 "Three upgrade steps, separated by semicolons. Each step is Item:Amount pairs separated by commas.",
                 null,
                 ConfigHints.Synced(order - 5)));
+        if (tier.Id == "flametal")
+        {
+            craft.Value = MagnetCatalog.KeepEdited(craft.Value, MagnetCatalog.PreviousFlametalCraft, tier.Craft);
+            upgrades.Value = MagnetCatalog.KeepEdited(
+                upgrades.Value,
+                MagnetCatalog.PreviousFlametalUpgrades,
+                tier.Upgrades);
+        }
+
+        Craft = craft;
+        Upgrades = upgrades;
         Station = config.Bind(
             section,
             "Station",

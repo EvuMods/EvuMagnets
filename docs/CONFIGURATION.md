@@ -45,7 +45,9 @@ Default crafts:
 - Iron, forge level 1: `Iron:20,Thunderstone:1,Ectoplasm:5`
 - Silver, forge level 2: `Iron:10,Silver:10,Thunderstone:1,Obsidian:5`
 - Black metal, forge level 3: `Iron:10,BlackMetal:10,Thunderstone:1,Crystal:10`
-- Flametal, black forge level 1: `Iron:10,Flametal:10,Thunderstone:1,Eitr:5`
+- Flametal, black forge level 1: `Iron:10,FlametalNew:10,Thunderstone:1,Eitr:5`
+
+`FlametalNew` is the Ashlands bar from a blast furnace. The older prefab `Flametal` is Ancient Metal, which the game no longer produces. A config that still has that old default is rewritten to `FlametalNew` the next time it loads. A craft or upgrade line that was edited stays as written.
 
 Default upgrades, for each tier's own bar:
 

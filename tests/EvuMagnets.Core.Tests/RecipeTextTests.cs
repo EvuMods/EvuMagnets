@@ -67,6 +67,28 @@ public sealed class RecipeTextTests
     }
 
     [Fact]
+    public void Flametal_UsesTheAshlandsBar()
+    {
+        var tier = MagnetCatalog.All[3];
+        Assert.Equal("flametal", tier.Id);
+        Assert.True(RecipeText.TryParseList(tier.Craft, out var craft, out var error), error);
+        Assert.Equal(new[] { "Iron", "FlametalNew", "Thunderstone", "Eitr" }, Names(craft));
+        Assert.Equal(new[] { 10, 10, 1, 5 }, Amounts(craft));
+        Assert.True(RecipeText.TryParseUpgrades(tier.Upgrades, out var steps, out error), error);
+        Assert.Equal(new[] { 10, 20, 40 }, new[]
+        {
+            RecipeText.AmountFor(2, "FlametalNew", craft, steps),
+            RecipeText.AmountFor(3, "FlametalNew", craft, steps),
+            RecipeText.AmountFor(4, "FlametalNew", craft, steps),
+        });
+        Assert.Equal(tier.Craft, MagnetCatalog.KeepEdited(MagnetCatalog.PreviousFlametalCraft, MagnetCatalog.PreviousFlametalCraft, tier.Craft));
+        Assert.Equal(
+            tier.Upgrades,
+            MagnetCatalog.KeepEdited(MagnetCatalog.PreviousFlametalUpgrades, MagnetCatalog.PreviousFlametalUpgrades, tier.Upgrades));
+        Assert.Equal("Iron:10,Flametal:8", MagnetCatalog.KeepEdited("Iron:10,Flametal:8", MagnetCatalog.PreviousFlametalCraft, tier.Craft));
+    }
+
+    [Fact]
     public void Cast_UsesTheBlackForgeRecipe()
     {
         Assert.Equal("blackforge", MagnetCast.Station);

@@ -77,6 +77,11 @@ public static class MagnetCast
 
 public static class MagnetCatalog
 {
+    public const string PreviousFlametalCraft = "Iron:10,Flametal:10,Thunderstone:1,Eitr:5";
+
+    public const string PreviousFlametalUpgrades =
+        "Flametal:10,Thunderstone:1;Flametal:20,Thunderstone:2;Flametal:40,Thunderstone:4";
+
     public static IReadOnlyList<MagnetTierInfo> All { get; } = new[]
     {
         new MagnetTierInfo(
@@ -109,12 +114,12 @@ public static class MagnetCatalog
         new MagnetTierInfo(
             "flametal",
             "Flametal Magnet",
-            "Hot orange flametal, still unfinished. It pulls in everything nearby.",
+            "Hot orange flametal. It pulls in everything nearby.",
             "blackforge",
             1,
             new[] { 20f, 22f, 24f, 28f },
-            "Iron:10,Flametal:10,Thunderstone:1,Eitr:5",
-            "Flametal:10,Thunderstone:1;Flametal:20,Thunderstone:2;Flametal:40,Thunderstone:4"),
+            "Iron:10,FlametalNew:10,Thunderstone:1,Eitr:5",
+            "FlametalNew:10,Thunderstone:1;FlametalNew:20,Thunderstone:2;FlametalNew:40,Thunderstone:4"),
         new MagnetTierInfo(
             "bloodgold",
             "Bloodgold Magnet",
@@ -146,5 +151,10 @@ public static class MagnetCatalog
         }
 
         return false;
+    }
+
+    public static string KeepEdited(string saved, string previous, string current)
+    {
+        return saved == previous ? current : saved;
     }
 }
