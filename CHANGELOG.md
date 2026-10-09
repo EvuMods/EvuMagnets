@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.3](https://github.com/EvuMods/EvuMagnets/compare/v0.3.2...v0.3.3) (2026-10-09)
+
+
+### Bug Fixes
+
+* correct magnet equip, claims, and upgrade recipes ([46d1c98](https://github.com/EvuMods/EvuMagnets/commit/46d1c9864661cba7929bce8a59122eb1cc847f5f))
+* keep a belt equipped and pull drops straight at the player ([db15e4f](https://github.com/EvuMods/EvuMagnets/commit/db15e4f9a98af5f4510788e0c8279cfa9476f7cd))
+* keep an equipped magnet in its slot after login ([d0885d8](https://github.com/EvuMods/EvuMagnets/commit/d0885d828bc8ab4c78a10536216ac40973da9917))
+
 ## [0.3.2](https://github.com/EvuMods/EvuMagnets/compare/v0.3.1...v0.3.2) (2026-10-06)
 
 
