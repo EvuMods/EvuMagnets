@@ -179,20 +179,25 @@ public static class PickupRules
 
     public static void PullOffset(
         float itemX,
+        float itemY,
         float itemZ,
         float playerX,
+        float playerY,
         float playerZ,
         float speed,
         float dt,
         out float offsetX,
+        out float offsetY,
         out float offsetZ)
     {
         var deltaX = playerX - itemX;
+        var deltaY = playerY - itemY;
         var deltaZ = playerZ - itemZ;
-        var distance = Math.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
+        var distance = Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY) + (deltaZ * deltaZ));
         if (distance < 0.0001d || speed <= 0f || dt <= 0f)
         {
             offsetX = 0f;
+            offsetY = 0f;
             offsetZ = 0f;
             return;
         }
@@ -201,12 +206,14 @@ public static class PickupRules
         if (distance <= step)
         {
             offsetX = (float)deltaX;
+            offsetY = (float)deltaY;
             offsetZ = (float)deltaZ;
             return;
         }
 
         var scale = step / distance;
         offsetX = (float)(deltaX * scale);
+        offsetY = (float)(deltaY * scale);
         offsetZ = (float)(deltaZ * scale);
     }
 }

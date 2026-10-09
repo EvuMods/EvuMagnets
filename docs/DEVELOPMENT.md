@@ -3,7 +3,7 @@
 ## Layout
 
 - `src/EvuMagnets.Core` holds the tier table, recipe text, carry check, and the rule for which magnet is active. It targets `netstandard2.0` and does not reference Unity.
-- `src/EvuMagnets` is the BepInEx plugin (`net48`). It clones a vanilla trinket, registers forge recipes through Jotunn, and patches pickup. When AzuEPI is loaded, each magnet's item type is utility, so the Utility slot leaves the Magnet slot alone. Otherwise it stays a trinket.
+- `src/EvuMagnets` is the BepInEx plugin (`net48`). It clones a vanilla trinket, registers forge recipes through Jotunn, and patches pickup. When AzuEPI is loaded, each magnet uses AzuEPI's slot item type, so the Utility slot can hold a belt. Otherwise it stays a trinket.
 - `Requirement.GetAmount` is postfixed so upgrade costs can be 10, 20, and 40 instead of a linear step.
 - Vanilla auto-pickup stays at 2 meters, measured from a point 1 meter above the player. A second pass keeps pulling until a drop is half a meter inside that sphere, including when `PullThroughAllWards` is on, and it skips items inside a ward the player cannot access unless that setting is on. Each client writes its current reach to its player ZDO, and only the nearest player who can reach a drop requests ownership. A drop moves only after this client owns it. One drop the magnet cannot read is skipped, and the pass continues.
 
@@ -52,10 +52,11 @@ There is no automated playtest here. After an item or pickup change, confirm:
 
 - Turning Enabled off leaves pickup at 2 meters. A crafted magnet stays in the inventory.
 - Alt+V pauses that player's magnet and leaves vanilla auto-pickup on. The same pause is the Local Active checkbox. Neither one is sent to the server.
-- An iron magnet at quality 1 pulls from 4 meters, and quality 4 pulls from 8 meters. The item slides in. It is not teleported.
+- An iron magnet at quality 1 pulls from 4 meters, and quality 4 pulls from 8 meters. The drop moves in a straight line, including up or down a slope. It is not teleported.
 - A stack that would put you over your carry weight stays on the ground.
 - Two magnets cannot stay equipped. The bonus stays off if they do.
 - With AzuExtendedPlayerInventory, a picked-up magnet lands in the Magnet slot. After login, that equipped magnet is still in the Magnet slot, beside a trinket and a utility item. Without AzuEPI it equips as a trinket.
+- With AzuEPI, a belt stays equipped while a magnet is equipped, and the magnet stays in the Magnet slot after login.
 - Two players near one drop: it moves toward the nearer player.
 - A magnet player pulls a drop that a closer player without a magnet cannot reach.
 - Using a magnet while swimming, without a mod that allows equipping there, leaves the current magnet equipped.

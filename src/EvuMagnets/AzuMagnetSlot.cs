@@ -35,6 +35,31 @@ internal static class AzuMagnetSlot
         }
     }
 
+    public static bool TryGetFakeItemType(out ItemDrop.ItemData.ItemType itemType)
+    {
+        itemType = ItemDrop.ItemData.ItemType.Trinket;
+        var api = Type.GetType(ApiTypeName);
+        if (api == null)
+        {
+            return false;
+        }
+
+        var loaded = api.GetMethod("IsLoaded", BindingFlags.Public | BindingFlags.Static);
+        if (loaded == null || !(bool)loaded.Invoke(null, null))
+        {
+            return false;
+        }
+
+        var method = api.GetMethod("GetFakeItemType", BindingFlags.Public | BindingFlags.Static);
+        if (method == null)
+        {
+            return false;
+        }
+
+        itemType = (ItemDrop.ItemData.ItemType)method.Invoke(null, null);
+        return true;
+    }
+
     public static void Register(IReadOnlyList<string> prefabs)
     {
         Exists = false;

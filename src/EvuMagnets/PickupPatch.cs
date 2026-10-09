@@ -175,14 +175,17 @@ static class PickupPatch
 
         PickupRules.PullOffset(
             position.x,
+            position.y,
             position.z,
-            playerPosition.x,
-            playerPosition.z,
+            origin.x,
+            origin.y,
+            origin.z,
             PickupRules.PullSpeed,
             dt,
             out var offsetX,
+            out var offsetY,
             out var offsetZ);
-        var step = new Vector3(offsetX, 0f, offsetZ);
+        var step = new Vector3(offsetX, offsetY, offsetZ);
         Stop(body);
         Stop(drop.GetComponent<Rigidbody>());
         drop.transform.position += step;

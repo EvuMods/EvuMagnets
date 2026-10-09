@@ -37,10 +37,11 @@ internal static class MagnetItems
 
         _registered = true;
         AddTranslations();
-        var utilityType = AzuMagnetSlot.Loaded;
-        if (utilityType)
+        var itemType = ItemDrop.ItemData.ItemType.Trinket;
+        if (AzuMagnetSlot.TryGetFakeItemType(out var slotType))
         {
-            Plugin.Log.LogInfo("AzuEPI is loaded. Magnets use the utility item type.");
+            itemType = slotType;
+            Plugin.Log.LogInfo("AzuEPI is loaded. Magnets use AzuEPI's slot item type.");
         }
 
         var source = FindCloneSource();
@@ -50,7 +51,7 @@ internal static class MagnetItems
         {
             var tier = MagnetCatalog.All[i];
             names[i] = tier.PrefabName;
-            RegisterTier(tier, source, utilityType);
+            RegisterTier(tier, source, itemType);
         }
 
         AzuMagnetSlot.Register(names);
@@ -162,7 +163,7 @@ internal static class MagnetItems
         return false;
     }
 
-    static void RegisterTier(MagnetTierInfo tier, string source, bool utilityType)
+    static void RegisterTier(MagnetTierInfo tier, string source, ItemDrop.ItemData.ItemType itemType)
     {
         var prefab = PrefabManager.Instance.CreateClonedPrefab(tier.PrefabName, source);
         if (prefab == null)
@@ -175,9 +176,7 @@ internal static class MagnetItems
         var shared = drop.m_itemData.m_shared;
         shared.m_name = "$" + tier.Token;
         shared.m_description = "$" + tier.Token + "_desc";
-        shared.m_itemType = utilityType
-            ? ItemDrop.ItemData.ItemType.Utility
-            : ItemDrop.ItemData.ItemType.Trinket;
+        shared.m_itemType = itemType;
         shared.m_maxStackSize = 1;
         shared.m_weight = 2f;
         shared.m_maxQuality = tier.Ranges.Length;

@@ -175,16 +175,32 @@ public sealed class PickupRulesTests
     [Fact]
     public void Pull_StopsOnThePlayerWithoutChangingHeight()
     {
-        PickupRules.PullOffset(0f, 0f, 10f, 0f, PickupRules.PullSpeed, 10f, out var offsetX, out var offsetZ);
+        PickupRules.PullOffset(0f, 0f, 0f, 10f, 0f, 0f, PickupRules.PullSpeed, 10f, out var offsetX, out var offsetY, out var offsetZ);
         Assert.Equal(10f, offsetX);
+        Assert.Equal(0f, offsetY);
         Assert.Equal(0f, offsetZ);
     }
 
     [Fact]
     public void Pull_StaysOnTheGroundLine()
     {
-        PickupRules.PullOffset(0f, 0f, 3f, 4f, PickupRules.PullSpeed, 0.1f, out var offsetX, out var offsetZ);
+        PickupRules.PullOffset(0f, 0f, 0f, 3f, 0f, 4f, PickupRules.PullSpeed, 0.1f, out var offsetX, out var offsetY, out var offsetZ);
         Assert.Equal(0.9, offsetX, 3);
+        Assert.Equal(0f, offsetY);
         Assert.Equal(1.2, offsetZ, 3);
+    }
+
+    [Fact]
+    public void Pull_DescendsWhenThePlayerIsBelow()
+    {
+        PickupRules.PullOffset(0f, 10f, 0f, 0f, 0f, 0f, PickupRules.PullSpeed, 0.1f, out var offsetX, out var offsetY, out var offsetZ);
+        Assert.Equal(0f, offsetX);
+        Assert.Equal(-1.5, offsetY, 3);
+        Assert.Equal(0f, offsetZ);
+
+        PickupRules.PullOffset(0f, 10f, 0f, 0f, 0f, 0f, PickupRules.PullSpeed, 10f, out offsetX, out offsetY, out offsetZ);
+        Assert.Equal(0f, offsetX);
+        Assert.Equal(-10f, offsetY);
+        Assert.Equal(0f, offsetZ);
     }
 }
