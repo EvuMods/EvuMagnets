@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/EvuMods/EvuMagnets/compare/v0.3.3...v0.3.4) (2026-10-09)
+
+
+### Bug Fixes
+
+* craft the flametal magnet from the Ashlands bar ([e61753d](https://github.com/EvuMods/EvuMagnets/commit/e61753dc54e4a4c991998509619be3fc739895be))
+
 ## [0.3.3](https://github.com/EvuMods/EvuMagnets/compare/v0.3.2...v0.3.3) (2026-10-09)
 
 
