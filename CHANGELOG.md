@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/EvuMods/EvuMagnets/compare/v0.3.4...v0.3.5) (2026-10-10)
+
+
+### Bug Fixes
+
+* leave drops alone when the normal inventory is full ([fcb8e87](https://github.com/EvuMods/EvuMagnets/commit/fcb8e87a2259568599e46ae018b86aaa793d1332))
+
 ## [0.3.4](https://github.com/EvuMods/EvuMagnets/compare/v0.3.3...v0.3.4) (2026-10-09)
 
 

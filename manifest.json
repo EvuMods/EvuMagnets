@@ -1,7 +1,7 @@
 {
     "name": "EvuMagnets",
     "description": "Craftable magnets that pull nearby items from farther away.",
-    "version_number": "0.3.4",
+    "version_number": "0.3.5",
     "website_url": "https://github.com/EvuMods/EvuMagnets",
     "dependencies": [
         "ValheimModding-Jotunn-2.30.2"
