@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/EvuMods/EvuMagnets/compare/v0.3.5...v0.4.0) (2026-10-10)
+
+
+### Features
+
+* keep pulling when a supported bag would store the drop ([bc1f13b](https://github.com/EvuMods/EvuMagnets/commit/bc1f13b1d3c51ec98ace36405b2da1261f1b8b8e))
+
 ## [0.3.5](https://github.com/EvuMods/EvuMagnets/compare/v0.3.4...v0.3.5) (2026-10-10)
 
 
