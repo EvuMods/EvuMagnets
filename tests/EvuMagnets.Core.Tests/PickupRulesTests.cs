@@ -59,6 +59,27 @@ public sealed class PickupRulesTests
     }
 
     [Fact]
+    public void Move_RequiresAStackThatFits()
+    {
+        Assert.False(PickupRules.ShouldMove(0, true, 0f, 0f, 300f));
+        Assert.False(PickupRules.ShouldMove(-1, true, 0f, 1f, 300f));
+        Assert.False(PickupRules.ShouldMove(5, false, 0f, 2f, 300f));
+        Assert.False(PickupRules.ShouldMove(5, true, 299f, 2f, 300f));
+        Assert.True(PickupRules.ShouldMove(5, true, 298f, 2f, 300f));
+    }
+
+    [Fact]
+    public void Grid_IgnoresSlotsOutsideTheNormalInventory()
+    {
+        Assert.False(PickupRules.GridFits(0, 0, 4, 50));
+        Assert.False(PickupRules.GridFits(1, 0, 0, 50));
+        Assert.True(PickupRules.GridFits(1, 4, 0, 50));
+        Assert.True(PickupRules.GridFits(10, 0, 1, 50));
+        Assert.False(PickupRules.GridFits(51, 0, 1, 50));
+        Assert.False(PickupRules.GridFits(1, -1, 1, 50));
+    }
+
+    [Fact]
     public void Handoff_PullsAGroundDropAtTwoMeters()
     {
         var groundGap = (float)Math.Sqrt((2d * 2d) + (1d * 1d));

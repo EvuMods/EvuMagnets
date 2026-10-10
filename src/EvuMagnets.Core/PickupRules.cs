@@ -6,6 +6,7 @@ namespace EvuMagnets.Core;
 public static class PickupRules
 {
     public const float VanillaRange = 2f;
+    public const float VanillaPickupDistance = 0.3f;
     public const float PickupDistance = 1f;
     public const float HandoffMargin = 0.5f;
     public const float ClaimMargin = 0.75f;
@@ -54,6 +55,23 @@ public static class PickupRules
     public static bool FitsCarry(float carried, float incoming, float maxCarry)
     {
         return incoming >= 0f && carried + incoming <= maxCarry;
+    }
+
+    public static bool ShouldMove(int stack, bool fitsInventory, float carried, float incoming, float maxCarry)
+    {
+        return stack > 0 && fitsInventory && FitsCarry(carried, incoming, maxCarry);
+    }
+
+    public static bool GridFits(int stack, int freeStackSpace, int freeCells, int maxStack)
+    {
+        if (stack <= 0 || freeStackSpace < 0 || freeCells < 0)
+        {
+            return false;
+        }
+
+        var perCell = maxStack > 0 ? maxStack : 1;
+        var space = (long)freeStackSpace + ((long)freeCells * perCell);
+        return space >= stack;
     }
 
     public static bool InExtraRing(float distance, float vanillaRange, float magnetRange)

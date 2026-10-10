@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using EvuMagnets.Core;
 using HarmonyLib;
 using UnityEngine;
@@ -12,7 +13,10 @@ static class PickupPatch
     const int InitialHits = 128;
     static Collider[] Hits = new Collider[InitialHits];
     static readonly List<PickupRules.ClaimDistance> Claims = new List<PickupRules.ClaimDistance>();
+    static readonly HashSet<string> Blocked = new HashSet<string>(StringComparer.Ordinal);
     static bool _loggedDropFailure;
+    static bool _resolvedFreeCells;
+    static MethodInfo? _freeNormalCells;
 
     struct Pass
     {
@@ -28,7 +32,8 @@ static class PickupPatch
         MagnetReach.Publish(__instance, __state.Extend ? __state.Range : 0f);
         if (__state.Extend)
         {
-            __instance.m_autoPickupRange = PickupRules.VanillaRange;
+            // Vanilla would slide a drop, then say the inventory is full, when a quick slot is empty.
+            __instance.m_autoPickupRange = 0f;
         }
     }
 
@@ -60,6 +65,7 @@ static class PickupPatch
             return;
         }
 
+        Blocked.Clear();
         var origin = player.transform.position + Vector3.up;
         var count = Overlap(origin, range, player.m_autoPickupMask);
         var inventory = player.GetInventory();
@@ -133,16 +139,41 @@ static class PickupPatch
         var playerPosition = player.transform.position;
         var horizontal = HorizontalDistance(position, playerPosition);
         var vanillaDistance = Vector3.Distance(position, origin);
-        var inReach = horizontal <= PickupRules.PickupDistance;
-        var inRing = PickupRules.NeedsPull(vanillaDistance, PickupRules.VanillaRange, range, PickupRules.HandoffMargin);
+        var inReach = vanillaDistance < PickupRules.VanillaPickupDistance;
+        var inRing = vanillaDistance >= PickupRules.VanillaPickupDistance && vanillaDistance <= range;
         if (!inReach && !inRing)
         {
             return;
         }
 
         var data = drop.m_itemData;
-        if (!inventory.CanAddItem(data, -1)
-            || !PickupRules.FitsCarry(inventory.GetTotalWeight(), data.GetWeight(-1), player.GetMaxCarryWeight()))
+        var itemName = data.m_shared.m_name;
+        if (itemName != null && Blocked.Contains(itemName))
+        {
+            return;
+        }
+
+        // Vanilla reads the ZDO only once this client owns the drop.
+        if (view.IsOwner())
+        {
+            drop.Load();
+        }
+
+        var stack = data.m_stack;
+        var carried = inventory.GetTotalWeight();
+        var maxCarry = player.GetMaxCarryWeight();
+        if (!PickupRules.ShouldMove(1, FitsInventory(inventory, data, 1), carried, data.GetWeight(1), maxCarry))
+        {
+            if (itemName != null)
+            {
+                Blocked.Add(itemName);
+            }
+
+            return;
+        }
+
+        if (stack <= 0
+            || !PickupRules.ShouldMove(stack, FitsInventory(inventory, data, stack), carried, data.GetWeight(stack), maxCarry))
         {
             return;
         }
@@ -163,9 +194,6 @@ static class PickupPatch
         {
             return;
         }
-
-        // Vanilla reads the ZDO only once this client owns the drop.
-        drop.Load();
 
         if (inReach)
         {
@@ -193,6 +221,40 @@ static class PickupPatch
         {
             dummy.transform.position += step;
         }
+    }
+
+    static bool FitsInventory(Inventory inventory, ItemDrop.ItemData data, int stack)
+    {
+        var shared = data.m_shared;
+        var freeStack = inventory.FindFreeStackSpace(shared.m_name, data.m_worldLevel);
+        return PickupRules.GridFits(stack, freeStack, FreeCells(inventory), shared.m_maxStackSize);
+    }
+
+    static int FreeCells(Inventory inventory)
+    {
+        if (!_resolvedFreeCells)
+        {
+            _resolvedFreeCells = true;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (var i = 0; i < assemblies.Length; i++)
+            {
+                var type = assemblies[i].GetType("AzuEPI.Core.InventoryHandlers.Capacity");
+                _freeNormalCells = type?.GetMethod(
+                    "FreeNormalCells",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                if (_freeNormalCells != null)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (_freeNormalCells != null)
+        {
+            return (int)_freeNormalCells.Invoke(null, new object[] { inventory });
+        }
+
+        return inventory.GetEmptySlots();
     }
 
     static int Overlap(Vector3 origin, float range, int mask)
