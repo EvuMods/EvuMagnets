@@ -11,6 +11,14 @@ Craftable magnets that pull items on the ground in from farther away. The pull i
 - Players can always pull items inside their own wards. `PullThroughAllWards` is what also reaches other players' wards.
 - A global toggle turns the bonus off without deleting crafted magnets. Alt+V pauses your own magnet and leaves vanilla auto-pickup on.
 
+## Compatibility
+
+These mods are optional. A full inventory still pulls a drop when that mod's own auto-store would put the drop in its bag.
+
+- [Adventure Backpacks](https://thunderstore.io/c/valheim/p/Vapok/AdventureBackpacks/) (Vapok)
+- [Backpacks](https://thunderstore.io/c/valheim/p/Smoothbrain/Backpacks/) (Smoothbrain). Bags from [Puddipacks](https://thunderstore.io/c/valheim/p/ObeseFelines/Puddipacks/), [Storage Backpacks](https://thunderstore.io/c/valheim/p/JamesJonesTV/Storage_Backpacks/), and [EpicLoot Enchanting Pouch](https://thunderstore.io/c/valheim/p/JamesJonesTV/EpicLoot_EnchantingPouch/) use that same check, including their item filters.
+- [Jewelcrafting](https://thunderstore.io/c/valheim/p/Smoothbrain/Jewelcrafting/) (Smoothbrain) gem bag
+
 ## Installation
 
 Install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/) and [Jotunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/). The mod has to be installed on the server and on every client. Copy `EvuMagnets.dll` and `EvuMagnets.Core.dll` into `BepInEx/plugins`. Both files have to sit in the same folder.

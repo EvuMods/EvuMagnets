@@ -162,7 +162,10 @@ static class PickupPatch
         var stack = data.m_stack;
         var carried = inventory.GetTotalWeight();
         var maxCarry = player.GetMaxCarryWeight();
-        if (!PickupRules.ShouldMove(1, FitsInventory(inventory, data, 1), carried, data.GetWeight(1), maxCarry))
+        var gridOne = FitsInventory(inventory, data, 1);
+        var gridStack = stack > 0 && FitsInventory(inventory, data, stack);
+        var store = gridOne && gridStack ? StoreHit.None : ExtraStores.Query(player, inventory, data);
+        if (!CanMove(1, gridOne, store, carried, data.GetWeight(1), maxCarry))
         {
             if (itemName != null)
             {
@@ -172,8 +175,7 @@ static class PickupPatch
             return;
         }
 
-        if (stack <= 0
-            || !PickupRules.ShouldMove(stack, FitsInventory(inventory, data, stack), carried, data.GetWeight(stack), maxCarry))
+        if (!CanMove(stack, gridStack, store, carried, data.GetWeight(stack), maxCarry))
         {
             return;
         }
@@ -221,6 +223,13 @@ static class PickupPatch
         {
             dummy.transform.position += step;
         }
+    }
+
+    static bool CanMove(int stack, bool gridFits, StoreHit store, float carried, float weight, float maxCarry)
+    {
+        var fits = gridFits || store.WouldStore;
+        var factor = gridFits || !store.WouldStore ? 1f : store.WeightFactor;
+        return PickupRules.ShouldMove(stack, fits, carried, weight * factor, maxCarry);
     }
 
     static bool FitsInventory(Inventory inventory, ItemDrop.ItemData data, int stack)
