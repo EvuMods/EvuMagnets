@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/EvuMods/EvuMagnets/compare/v0.4.1...v0.4.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* require Adventure Backpacks 2.4.0 for backpack pickup ([61083c1](https://github.com/EvuMods/EvuMagnets/commit/61083c126f01c314406aa9f3c2aa5f11cc18a997))
+
 ## [0.4.1](https://github.com/EvuMods/EvuMagnets/compare/v0.4.0...v0.4.1) (2026-10-15)
 
 
