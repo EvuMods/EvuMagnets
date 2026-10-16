@@ -1,31 +1,31 @@
 using System;
 using System.Reflection;
-using UnityEngine;
+using AdventureBackpacks.API.Client;
 
 namespace EvuMagnets;
 
 /// <summary>
-/// Adventure Backpacks stores on <c>Inventory.AddItem</c> when <c>ShouldStoreToBackpack</c> is true.
+/// Adventure Backpacks stores on <c>Inventory.AddItem</c> when <c>ABAPI.WouldStorePickup</c> is true.
+/// That query needs Adventure Backpacks 2.4.0 or newer.
 /// </summary>
 sealed class AdventureBackpackStore : IExtraStore
 {
-    const BindingFlags StaticMethod = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    const BindingFlags PublicStatic = BindingFlags.Public | BindingFlags.Static;
     static bool _resolved;
     static bool _logged;
-    static MethodInfo? _shouldStore;
+    static bool _hasQuery;
 
     public bool TryAccept(Player player, Inventory inventory, ItemDrop.ItemData item, out float weightFactor)
     {
         weightFactor = 1f;
         try
         {
-            if (!Ensure() || _shouldStore == null)
+            if (!Ensure())
             {
                 return false;
             }
 
-            var args = new object[] { player, item, null! };
-            return (bool)_shouldStore.Invoke(null, args);
+            return ABAPIClient.WouldStorePickup(player, item);
         }
         catch (Exception ex)
         {
@@ -38,25 +38,25 @@ sealed class AdventureBackpackStore : IExtraStore
     {
         if (_resolved)
         {
-            return _shouldStore != null;
+            return _hasQuery;
         }
 
         _resolved = true;
-        var type = ExtraStores.FindType("AdventureBackpacks.Features.StoreToBackpack");
-        _shouldStore = type?.GetMethod(
-            "ShouldStoreToBackpack",
-            StaticMethod,
+        var type = ExtraStores.FindType("AdventureBackpacks.API.ABAPI");
+        _hasQuery = type?.GetMethod(
+            "WouldStorePickup",
+            PublicStatic,
             null,
-            new[] { typeof(Player), typeof(ItemDrop.ItemData), typeof(Inventory).MakeByRefType() },
-            null);
-        if (_shouldStore == null && ExtraStores.AssemblyLoaded("AdventureBackpacks"))
+            new[] { typeof(Player), typeof(ItemDrop.ItemData) },
+            null) != null;
+        if (!_hasQuery && ExtraStores.AssemblyLoaded("AdventureBackpacks"))
         {
             ExtraStores.LogOnce(
                 ref _logged,
-                "Adventure Backpacks is loaded, but its store check was not found. A full inventory will not pull into that backpack.");
+                "Adventure Backpacks is loaded, but WouldStorePickup was not found. Adventure Backpacks 2.4.0 or newer is required. A full inventory will not pull into that backpack.");
         }
 
-        return _shouldStore != null;
+        return _hasQuery;
     }
 
     static string Message(Exception ex)

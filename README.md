@@ -15,7 +15,7 @@ Craftable magnets that pull items on the ground in from farther away. The pull i
 
 These mods are optional. A full inventory still pulls a drop when that mod's own auto-store would put the drop in its bag.
 
-- [Adventure Backpacks](https://thunderstore.io/c/valheim/p/Vapok/AdventureBackpacks/) (Vapok)
+- [Adventure Backpacks](https://thunderstore.io/c/valheim/p/Vapok/AdventureBackpacks/) (Vapok) 2.4.0 or newer
 - [Backpacks](https://thunderstore.io/c/valheim/p/Smoothbrain/Backpacks/) (Smoothbrain). Bags from [Puddipacks](https://thunderstore.io/c/valheim/p/ObeseFelines/Puddipacks/), [Storage Backpacks](https://thunderstore.io/c/valheim/p/JamesJonesTV/Storage_Backpacks/), and [EpicLoot Enchanting Pouch](https://thunderstore.io/c/valheim/p/JamesJonesTV/EpicLoot_EnchantingPouch/) use that same check, including their item filters.
 - [Jewelcrafting](https://thunderstore.io/c/valheim/p/Smoothbrain/Jewelcrafting/) (Smoothbrain) gem bag
 
