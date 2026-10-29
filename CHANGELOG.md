@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/EvuMods/EvuMagnets/compare/v0.4.2...v0.4.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* rebuild against Valheim 26266951 ([cc298e9](https://github.com/EvuMods/EvuMagnets/commit/cc298e989392382204022106a195c3f91d9a9ae5))
+
 ## [0.4.2](https://github.com/EvuMods/EvuMagnets/compare/v0.4.1...v0.4.2) (2026-10-16)
 
 
